@@ -40,7 +40,7 @@ retrieval:
   bm25_weight: 0.3         # Weight for BM25 scores in fusion
   vector_weight: 0.7       # Weight for vector scores in fusion
   reranker_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
-  use_reranker: true
+  use_reranker: false      # Set to true after first run (downloads ~85MB cross-encoder)
 
 # ---------------------
 # LLM (Generation)

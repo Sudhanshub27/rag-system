@@ -18,6 +18,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 from pipeline import RAGPipeline
 from utils.logger import setup_logger
 
+# Suppress verbose transformers warnings in the UI
+import logging
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Ask My Documents — RAG System",
@@ -91,7 +96,12 @@ def get_pipeline() -> RAGPipeline:
     return RAGPipeline()
 
 
-pipeline = get_pipeline()
+try:
+    pipeline = get_pipeline()
+    _pipeline_error = None
+except Exception as _e:
+    pipeline = None
+    _pipeline_error = str(_e)
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -128,9 +138,12 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📊 Knowledge Base Stats")
-    stats = pipeline.get_stats()
-    st.metric("Chunks in DB", stats["total_chunks_in_vector_store"])
-    st.metric("Embedding Model", stats["embedding_model"].split("/")[-1])
+    if pipeline:
+        stats = pipeline.get_stats()
+        st.metric("Chunks in DB", stats["total_chunks_in_vector_store"])
+        st.metric("Embedding Model", stats["embedding_model"].split("/")[-1])
+    else:
+        st.error(f"Pipeline error: {_pipeline_error}")
 
     st.divider()
     st.markdown("### ⚙️ Settings")
@@ -146,6 +159,12 @@ with st.sidebar:
 # ── Main Area ─────────────────────────────────────────────────────────────────
 st.markdown('<div class="main-header">📚 Ask My Documents</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Upload documents and ask questions — answers grounded in your data with citations.</div>', unsafe_allow_html=True)
+
+# Show pipeline error at top if init failed
+if pipeline is None:
+    st.error(f"⚠️ Pipeline failed to initialize: {_pipeline_error}")
+    st.info("Try refreshing the page. If the issue persists, check terminal logs.")
+    st.stop()
 
 # Chat history
 if "messages" not in st.session_state:
@@ -179,7 +198,7 @@ if query := st.chat_input("Ask a question about your documents…"):
         st.markdown(query)
 
     # Check if KB has content
-    if pipeline.get_stats()["total_chunks_in_vector_store"] == 0:
+    if not pipeline or pipeline.get_stats()["total_chunks_in_vector_store"] == 0:
         warning = "⚠️ No documents ingested yet. Please upload documents using the sidebar first."
         st.session_state.messages.append({"role": "assistant", "content": warning})
         with st.chat_message("assistant"):
