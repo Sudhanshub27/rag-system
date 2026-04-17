@@ -47,7 +47,7 @@ retrieval:
 # ---------------------
 generation:
   provider: "openrouter"        # "anthropic" | "openai" | "deepseek" | "openrouter"
-  model: "meta-llama/llama-3.3-70b-instruct:free"   # Free LLaMA 3.3 model on OpenRouter
+  model: "openrouter/free"      # Auto-routes to available free models to avoid rate limits
   max_tokens: 2048
   temperature: 0.1         # Low temp for factual grounding
   timeout_seconds: 60
