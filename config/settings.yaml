@@ -46,8 +46,8 @@ retrieval:
 # LLM (Generation)
 # ---------------------
 generation:
-  provider: "deepseek"          # "anthropic" | "openai" | "deepseek"
-  model: "deepseek-chat"        # Free tier model at platform.deepseek.com
+  provider: "openrouter"        # "anthropic" | "openai" | "deepseek" | "openrouter"
+  model: "deepseek/deepseek-chat-v3-0324:free"   # Free model on OpenRouter
   max_tokens: 2048
   temperature: 0.1         # Low temp for factual grounding
   timeout_seconds: 60

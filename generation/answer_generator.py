@@ -8,7 +8,7 @@ import re
 from typing import List, Optional
 
 from config import ANTHROPIC_API_KEY, OPENAI_API_KEY, generation_config, prompts_config
-from config import DEEPSEEK_API_KEY
+from config import DEEPSEEK_API_KEY, OPENROUTER_API_KEY
 from utils.helpers import format_citations
 from utils.logger import logger
 from utils.models import RAGResponse, RetrievedChunk
@@ -173,10 +173,32 @@ class AnswerGenerator:
                     "openai package not found. Run: pip install openai"
                 ) from e
 
+        elif self.provider == "openrouter":
+            # OpenRouter: OpenAI-compatible, supports 100s of free/paid models
+            if not OPENROUTER_API_KEY:
+                raise EnvironmentError(
+                    "OPENROUTER_API_KEY environment variable is not set. "
+                    "Get a free key at https://openrouter.ai/keys"
+                )
+            try:
+                from openai import OpenAI
+                return OpenAI(
+                    api_key=OPENROUTER_API_KEY,
+                    base_url="https://openrouter.ai/api/v1",
+                    default_headers={
+                        "HTTP-Referer": "https://github.com/Sudhanshub27/rag-system",
+                        "X-Title": "Ask My Documents RAG",
+                    },
+                )
+            except ImportError as e:
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
+
         else:
             raise ValueError(
                 f"Unknown provider '{self.provider}'. "
-                "Use 'anthropic', 'openai', or 'deepseek'."
+                "Use 'anthropic', 'openai', 'deepseek', or 'openrouter'."
             )
 
     def _call_llm(self, prompt: str) -> str:
@@ -186,8 +208,8 @@ class AnswerGenerator:
         try:
             if self.provider == "anthropic":
                 return self._call_anthropic(system_prompt, prompt)
-            elif self.provider in ("openai", "deepseek"):
-                # Both use the OpenAI-compatible client
+            elif self.provider in ("openai", "deepseek", "openrouter"):
+                # All three use the OpenAI-compatible client
                 return self._call_openai(system_prompt, prompt)
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
