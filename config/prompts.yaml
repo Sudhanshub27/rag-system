@@ -1,0 +1,79 @@
+
+# ============================================================
+# RAG System Prompt Configuration
+# All prompts are versioned here for easy experimentation.
+# ============================================================
+
+version: "1.0.0"
+
+# ---------------------
+# System-level prompt
+# ---------------------
+system_prompt: |
+  You are a precise, citation-aware document assistant.
+  You answer questions STRICTLY based on the provided context chunks.
+  You MUST cite every claim using the [N] notation corresponding to the numbered context chunks.
+  If the context does not contain enough information to answer the question,
+  respond exactly with: "Insufficient information to answer based on the provided documents."
+  Do NOT hallucinate or use outside knowledge.
+
+# ---------------------
+# Retrieval instruction
+# ---------------------
+retrieval_prompt: |
+  Given the user query below, retrieve the most semantically relevant chunks
+  from the knowledge base. Return the top-K chunks with their metadata.
+
+  Query: {query}
+
+# ---------------------
+# Answer generation prompt
+# ---------------------
+answer_prompt: |
+  You are given a user question and a set of numbered context chunks retrieved from documents.
+  Answer the question using ONLY the information present in the context chunks.
+  Cite sources using [N] notation after each claim, where N is the chunk number.
+
+  If you cannot answer from the context, respond exactly with:
+  "Insufficient information to answer based on the provided documents."
+
+  ---
+  Context Chunks:
+  {context}
+
+  ---
+  Question: {question}
+
+  ---
+  Instructions:
+  1. Answer the question factually and concisely.
+  2. Cite every claim with [N] where N matches the chunk number.
+  3. After the answer, list citations in this exact format:
+
+  Citations:
+  [1] Source: <filename>, Page: <page_number>
+  [2] Source: <filename>, Page: <page_number>
+  ...
+
+  Answer:
+
+# ---------------------
+# Reranking prompt (used as instruction for cross-encoder)
+# ---------------------
+rerank_instruction: |
+  Given a query and a passage, rate how relevant the passage is to answering the query.
+  Score: 1 (highly relevant) to 0 (not relevant).
+
+# ---------------------
+# Fallback response
+# ---------------------
+fallback_response: "Insufficient information to answer based on the provided documents."
+
+# ---------------------
+# Thresholds
+# ---------------------
+thresholds:
+  min_relevance_score: 0.1       # Minimum reranker score to keep a chunk
+  insufficient_context_score: 0.05  # Below this, return fallback
+  top_k_retrieval: 10            # Chunks fetched before reranking
+  top_n_rerank: 5                # Chunks kept after reranking

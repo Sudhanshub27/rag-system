@@ -1,0 +1,242 @@
+"""
+Streamlit Web UI for the RAG System
+Provides a clean interface to upload documents and ask questions.
+
+Run with:
+    streamlit run app.py
+"""
+
+import sys
+import time
+from pathlib import Path
+
+import streamlit as st
+
+# Ensure project root is importable
+sys.path.insert(0, str(Path(__file__).parent))
+
+from pipeline import RAGPipeline
+from utils.logger import setup_logger
+
+# ── Page config ───────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Ask My Documents — RAG System",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ── Custom CSS ────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.2rem;
+    }
+    .sub-header {
+        color: #888;
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+    .citation-box {
+        background: #1e1e2e;
+        border-left: 4px solid #667eea;
+        padding: 0.8rem 1rem;
+        border-radius: 0 8px 8px 0;
+        margin: 0.3rem 0;
+        font-family: monospace;
+        font-size: 0.85rem;
+    }
+    .chunk-card {
+        background: #16213e;
+        border: 1px solid #0f3460;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .score-badge {
+        background: #667eea;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .fallback-warning {
+        background: #3d1a1a;
+        border: 1px solid #ff4444;
+        color: #ff8888;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .stButton>button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 0.5rem 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ── Pipeline singleton (cached in session state) ───────────────────────────────
+@st.cache_resource(show_spinner="Initializing RAG pipeline…")
+def get_pipeline() -> RAGPipeline:
+    setup_logger()
+    return RAGPipeline()
+
+
+pipeline = get_pipeline()
+
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("## 📂 Document Upload")
+    st.markdown("Upload one or more documents to add to your knowledge base.")
+
+    uploaded_files = st.file_uploader(
+        "Choose files",
+        type=["pdf", "txt", "md"],
+        accept_multiple_files=True,
+        label_visibility="collapsed",
+    )
+
+    if uploaded_files:
+        if st.button("📥 Ingest Documents", use_container_width=True):
+            tmp_dir = Path("./tmp_uploads")
+            tmp_dir.mkdir(exist_ok=True)
+
+            total_chunks = 0
+            for uf in uploaded_files:
+                tmp_path = tmp_dir / uf.name
+                tmp_path.write_bytes(uf.getvalue())
+
+                with st.spinner(f"Processing {uf.name}…"):
+                    try:
+                        n = pipeline.ingest(str(tmp_path))
+                        total_chunks += n
+                        st.success(f"✅ {uf.name}: {n} chunks")
+                    except Exception as e:
+                        st.error(f"❌ {uf.name}: {e}")
+
+            st.info(f"📊 Total chunks indexed: **{total_chunks}**")
+
+    st.divider()
+    st.markdown("### 📊 Knowledge Base Stats")
+    stats = pipeline.get_stats()
+    st.metric("Chunks in DB", stats["total_chunks_in_vector_store"])
+    st.metric("Embedding Model", stats["embedding_model"].split("/")[-1])
+
+    st.divider()
+    st.markdown("### ⚙️ Settings")
+    debug_mode = st.checkbox("Debug Mode", value=False)
+    if debug_mode:
+        import logging
+        logging.getLogger("rag").setLevel(logging.DEBUG)
+
+    st.divider()
+    st.markdown("*Powered by ChromaDB · Sentence-Transformers · Claude*")
+
+
+# ── Main Area ─────────────────────────────────────────────────────────────────
+st.markdown('<div class="main-header">📚 Ask My Documents</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Upload documents and ask questions — answers grounded in your data with citations.</div>', unsafe_allow_html=True)
+
+# Chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display existing chat
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+        if "citations" in msg and msg["citations"]:
+            with st.expander("📌 Citations"):
+                for cit in msg["citations"]:
+                    st.markdown(f'<div class="citation-box">{cit}</div>', unsafe_allow_html=True)
+        if "chunks" in msg and msg["chunks"] and debug_mode:
+            with st.expander("🔍 Retrieved Chunks (debug)"):
+                for i, rc in enumerate(msg["chunks"], 1):
+                    st.markdown(
+                        f'<div class="chunk-card">'
+                        f'<b>[{i}]</b> <span class="score-badge">score: {rc.score:.4f}</span> '
+                        f'— <i>{rc.chunk.source}</i>, page {rc.chunk.page}<br><br>'
+                        f'{rc.chunk.text[:300]}{"…" if len(rc.chunk.text) > 300 else ""}'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+# Query input
+if query := st.chat_input("Ask a question about your documents…"):
+    # Show user message
+    st.session_state.messages.append({"role": "user", "content": query})
+    with st.chat_message("user"):
+        st.markdown(query)
+
+    # Check if KB has content
+    if pipeline.get_stats()["total_chunks_in_vector_store"] == 0:
+        warning = "⚠️ No documents ingested yet. Please upload documents using the sidebar first."
+        st.session_state.messages.append({"role": "assistant", "content": warning})
+        with st.chat_message("assistant"):
+            st.warning(warning)
+    else:
+        with st.chat_message("assistant"):
+            with st.spinner("Searching documents and generating answer…"):
+                try:
+                    start = time.perf_counter()
+                    response = pipeline.query(query)
+                    elapsed = time.perf_counter() - start
+
+                    if response.is_fallback:
+                        st.markdown(
+                            '<div class="fallback-warning">⚠️ '
+                            + response.answer
+                            + '</div>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(response.answer)
+
+                    # Citations
+                    if response.citations:
+                        with st.expander("📌 Citations", expanded=True):
+                            for cit in response.citations:
+                                st.markdown(
+                                    f'<div class="citation-box">{cit}</div>',
+                                    unsafe_allow_html=True,
+                                )
+
+                    # Debug chunks
+                    if debug_mode and response.retrieved_chunks:
+                        with st.expander("🔍 Retrieved Chunks (debug)"):
+                            for i, rc in enumerate(response.retrieved_chunks, 1):
+                                st.markdown(
+                                    f'<div class="chunk-card">'
+                                    f'<b>[{i}]</b> <span class="score-badge">score: {rc.score:.4f}</span> '
+                                    f'— <i>{rc.chunk.source}</i>, page {rc.chunk.page}<br><br>'
+                                    f'{rc.chunk.text[:400]}{"…" if len(rc.chunk.text) > 400 else ""}'
+                                    f'</div>',
+                                    unsafe_allow_html=True,
+                                )
+
+                    st.caption(f"⚡ Answered in {elapsed:.2f}s | {len(response.retrieved_chunks)} chunks retrieved")
+
+                    # Store in history
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": response.answer,
+                        "citations": response.citations,
+                        "chunks": response.retrieved_chunks,
+                    })
+
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": f"Error: {e}",
+                    })

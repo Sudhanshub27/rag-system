@@ -1,0 +1,68 @@
+# Retrieval-Augmented Generation (RAG) — Overview
+
+## What is RAG?
+
+Retrieval-Augmented Generation (RAG) is a technique that enhances large language models by grounding their responses in a specific knowledge base. Instead of relying solely on the model's parametric knowledge, RAG retrieves relevant documents at inference time and provides them as context to the model.
+
+This approach significantly reduces hallucinations and makes answers verifiable through citations.
+
+## Core Components of a RAG Pipeline
+
+### 1. Document Ingestion
+The ingestion layer loads documents from various formats (PDF, TXT, Markdown). Each loader normalizes and cleans the raw text before passing it downstream. Proper handling of encoding issues and document structure is critical at this stage.
+
+### 2. Chunking
+Large documents are split into smaller segments called chunks. The optimal chunk size typically ranges from 500 to 800 tokens, with an overlap of approximately 100 tokens between consecutive chunks. Overlap prevents information loss at chunk boundaries and helps preserve semantic continuity.
+
+### 3. Embeddings
+Each chunk is converted into a dense vector representation (embedding) using a sentence-transformer model. The all-MiniLM-L6-v2 model is a popular choice, offering a good balance between speed and quality. Embeddings are normalized to unit length for cosine similarity computation.
+
+### 4. Vector Store
+The embeddings and their associated metadata are stored in a vector database such as ChromaDB. The vector store supports fast approximate nearest-neighbor search, enabling sub-second retrieval over millions of documents.
+
+### 5. Retrieval
+When a user asks a question, the query is embedded using the same model, and the vector store returns the top-K most similar chunks. Hybrid retrieval combines this with BM25 keyword search for improved recall. Results from both methods are merged using Reciprocal Rank Fusion (RRF).
+
+### 6. Reranking
+After initial retrieval, a cross-encoder model scores each query-chunk pair jointly. This is more accurate than the bi-encoder approach used for initial retrieval, but slower, so it is applied only to the candidate set (typically 10–20 chunks), not the entire corpus.
+
+### 7. Answer Generation
+The top-N reranked chunks are passed to a large language model (e.g., Claude or GPT-4) with a prompt that instructs it to:
+- Answer strictly from the provided context
+- Cite every claim using numbered references [N]
+- Return a standardized fallback if context is insufficient
+
+## Hybrid Retrieval
+
+Hybrid retrieval addresses the complementary strengths of lexical and semantic search:
+
+- **BM25 (keyword search)**: Excels at exact-match queries (names, product codes, specific phrases)
+- **Vector search**: Captures semantic meaning even when exact words are not present
+
+Reciprocal Rank Fusion (RRF) merges these ranked lists without requiring score normalization.
+
+## Evaluation Metrics
+
+A production RAG system must be continuously evaluated on:
+
+- **Faithfulness**: Is the generated answer supported by the retrieved context? This measures hallucination rate.
+- **Answer Correctness**: Is the answer semantically similar to the ground truth?
+- **Context Relevance**: Are the retrieved chunks actually relevant to the query?
+
+The RAGAS framework provides automated metrics for all three.
+
+## Avoiding Hallucinations
+
+To minimize hallucinations:
+1. Use a low temperature (e.g., 0.1) for generation
+2. Include explicit instructions to refuse answering if context is insufficient
+3. Implement faithfulness checks post-generation
+4. Keep the context window focused (top-5 chunks rather than top-20)
+
+## Production Considerations
+
+- Cache embeddings to disk to avoid recomputing on restart
+- Use persistent vector stores (e.g., ChromaDB PersistentClient) for durability
+- Log all queries, retrieved chunks, and generated answers for observability
+- Version your prompts in configuration files for easy experimentation
+- Build an evaluation dataset and gate deployments on metric thresholds
