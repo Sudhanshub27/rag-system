@@ -18,7 +18,7 @@ A **production-grade Retrieval-Augmented Generation (RAG)** system that lets you
 | 🗄️ **ChromaDB vector store** | Persistent, cosine similarity |
 | 🔍 **Hybrid retrieval** | BM25 + vector search via RRF |
 | 🎯 **Cross-encoder reranking** | `ms-marco-MiniLM-L-6-v2` |
-| 💬 **Citation-enforced answers** | Claude / GPT-4 with hallucination guards |
+| 💬 **Citation-enforced answers** | Claude / GPT-4 / DeepSeek / OpenRouter with hallucination guards |
 | 📊 **Evaluation pipeline** | RAGAS faithfulness, correctness, relevance |
 | 🖥️ **Streamlit UI** | Upload docs, chat with citations |
 | 🖱️ **CLI** | Full command-line interface |
@@ -152,8 +152,8 @@ retrieval:
   use_reranker: true   # Enable cross-encoder reranking
 
 generation:
-  provider: "anthropic"           # or "openai"
-  model: "claude-3-5-sonnet-20241022"
+  provider: "openrouter"          # or "anthropic" | "openai" | "deepseek"
+  model: "openrouter/free"        # Auto-routes free requests
   temperature: 0.1                # Low = more factual
 ```
 
