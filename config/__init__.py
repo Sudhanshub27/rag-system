@@ -105,6 +105,7 @@ class PromptsConfig:
 ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")
+DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
 
 # ── Singleton instances ───────────────────────────────────────────────────────
 embedding_config = EmbeddingConfig()

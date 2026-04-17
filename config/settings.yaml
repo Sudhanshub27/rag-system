@@ -46,8 +46,8 @@ retrieval:
 # LLM (Generation)
 # ---------------------
 generation:
-  provider: "anthropic"    # "anthropic" | "openai"
-  model: "claude-3-5-sonnet-20241022"
+  provider: "deepseek"          # "anthropic" | "openai" | "deepseek"
+  model: "deepseek-chat"        # Free tier model at platform.deepseek.com
   max_tokens: 2048
   temperature: 0.1         # Low temp for factual grounding
   timeout_seconds: 60
