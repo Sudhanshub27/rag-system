@@ -62,12 +62,73 @@ def detect_diagram_type(query: str) -> Optional[str]:
     return None
 
 
+def _normalize_mermaid_lines(code: str) -> str:
+    """
+    Fix lines where the LLM crammed multiple statements onto one line.
+    e.g. "A --> B    B --> C" becomes two separate lines.
+    Splits on 2+ whitespace characters that appear between identifiers.
+    """
+    fixed = []
+    for line in code.splitlines():
+        # Split where 2+ spaces occur between word characters (multi-statement lines)
+        parts = re.split(r'(?<=[\w\"\'\]\)])  +(?=[\w\"\'\[])', line)
+        fixed.extend(parts)
+    return "\n".join(fixed)
+
+
+# Valid Mermaid diagram type opening keywords
+_MERMAID_STARTS = [
+    "flowchart", "graph ", "graph\n", "sequenceDiagram", "classDiagram",
+    "erDiagram", "gantt", "pie", "mindmap", "stateDiagram", "journey",
+    "gitGraph", "quadrantChart", "xychart",
+]
+
+
 def _clean_mermaid_output(raw: str) -> str:
-    """Strip markdown code fences and whitespace from LLM output."""
-    # Remove ```mermaid ... ``` or ``` ... ``` wrapping
-    raw = re.sub(r"^```(?:mermaid)?\s*", "", raw.strip(), flags=re.IGNORECASE)
-    raw = re.sub(r"```\s*$", "", raw.strip())
-    return raw.strip()
+    """
+    Robustly extract valid Mermaid syntax from LLM output.
+    Strips code fences, preamble text, and any trailing explanation.
+    """
+    if not raw:
+        return ""
+
+    # Step 1: Remove code fence markers
+    raw = re.sub(r"```(?:mermaid)?\s*", "", raw, flags=re.IGNORECASE)
+    raw = raw.replace("```", "").strip()
+
+    # Step 2: Find where the actual diagram starts (first valid keyword)
+    best_pos = len(raw)
+    for keyword in _MERMAID_STARTS:
+        idx = raw.find(keyword)
+        if idx != -1 and idx < best_pos:
+            best_pos = idx
+
+    if best_pos < len(raw):
+        raw = raw[best_pos:]
+
+    # Step 3: Strip trailing prose after the diagram
+    lines = raw.splitlines()
+    diagram_lines = []
+    blank_streak = 0
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "":
+            blank_streak += 1
+            if blank_streak >= 2:
+                break  # Two consecutive blank lines = end of diagram
+            diagram_lines.append(line)
+        else:
+            blank_streak = 0
+            # Stop if line looks like natural language prose (not diagram syntax)
+            words = stripped.split()
+            if (len(diagram_lines) > 3
+                    and len(words) > 6
+                    and stripped[0].isupper()
+                    and not any(c in stripped for c in ["-->", "---", "::", ":", "||", "##", "(""])):
+                break
+            diagram_lines.append(line)
+
+    return _normalize_mermaid_lines("\n".join(diagram_lines).strip())
 
 
 class DiagramGenerator:

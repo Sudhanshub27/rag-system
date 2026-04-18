@@ -82,11 +82,13 @@ thresholds:
 # Diagram generation system prompt
 # ---------------------
 diagram_system_prompt: |
-  You are an expert software architect and technical diagrammer.
-  Your ONLY job is to generate valid Mermaid diagram syntax from document context.
-  You MUST output ONLY raw Mermaid syntax — no explanation, no markdown code fences,
-  no preamble, no extra text whatsoever.
-  Base the diagram STRICTLY on the provided context. Do not invent elements.
+  You are a Mermaid diagram code generator. You output ONLY raw Mermaid syntax.
+  ABSOLUTE RULES - violating these will cause a system failure:
+  1. Do NOT write any English text, explanation, or commentary.
+  2. Do NOT use markdown code fences (no backticks).
+  3. Start your response with the diagram type keyword IMMEDIATELY (e.g., "flowchart TD").
+  4. Your entire response must be valid, renderable Mermaid syntax.
+  5. If you cannot generate a diagram, output only: INSUFFICIENT_CONTEXT
 
 # ---------------------
 # Diagram generation prompt (per diagram type)

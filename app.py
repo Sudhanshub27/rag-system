@@ -108,18 +108,20 @@ st.markdown("""
 
 def render_mermaid(mermaid_code: str, height: int = 450):
     """Render a Mermaid diagram in Streamlit using Mermaid.js CDN."""
-    # Escape backticks and template literals in the code
-    safe_code = mermaid_code.replace("`", "\\`")
+    safe_code = mermaid_code.replace("`", "\\`").replace("</", "<\\/")
     html = f"""
-    <div class="mermaid-wrapper" style="background:#0d1117;border-radius:12px;padding:1.5rem;">
+    <div id="mermaid-wrapper" style="background:#0d1117;border-radius:12px;padding:1.5rem;">
         <div class="mermaid" id="mermaid-diagram">
 {safe_code}
+        </div>
+        <div id="mermaid-error" style="display:none;color:#ff8888;padding:1rem;background:#3d1a1a;border-radius:8px;">
+            ⚠️ Diagram syntax error — the AI generated invalid Mermaid code. Try rephrasing your request.
         </div>
     </div>
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({{ 
-            startOnLoad: true, 
+        mermaid.initialize({{
+            startOnLoad: false,
             theme: 'dark',
             themeVariables: {{
                 primaryColor: '#667eea',
@@ -134,6 +136,13 @@ def render_mermaid(mermaid_code: str, height: int = 450):
                 edgeLabelBackground: '#0d1117',
             }}
         }});
+        try {{
+            await mermaid.run({{ nodes: [document.getElementById('mermaid-diagram')] }});
+        }} catch (err) {{
+            document.getElementById('mermaid-diagram').style.display = 'none';
+            document.getElementById('mermaid-error').style.display = 'block';
+            console.error('Mermaid error:', err);
+        }}
     </script>
     """
     st.components.v1.html(html, height=height, scrolling=True)
