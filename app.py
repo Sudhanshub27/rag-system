@@ -145,7 +145,7 @@ def render_mermaid(mermaid_code: str, height: int = 450):
         }}
     </script>
     """
-    st.iframe(html, height=height, scrolling=True)
+    st.components.v1.html(html, height=height)
 
 
 # ── Pipeline singleton (cached in session state) ───────────────────────────────
