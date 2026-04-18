@@ -250,7 +250,7 @@ class DiagramGenerator:
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
             )
-            return response.content[0].text.strip()
+            content = response.content[0].text if response.content else None
 
         else:  # openai / deepseek / openrouter
             response = client.chat.completions.create(
@@ -262,4 +262,10 @@ class DiagramGenerator:
                     {"role": "user", "content": user_prompt},
                 ],
             )
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content if response.choices else None
+
+        if content is None:
+            logger.warning("LLM returned None content for diagram request")
+            return "INSUFFICIENT_CONTEXT"
+
+        return content.strip()

@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from pipeline import RAGPipeline
 from utils.logger import setup_logger
+from streamlit_mermaid import st_mermaid
 
 # Suppress verbose transformers warnings in the UI
 import logging
@@ -107,45 +108,8 @@ st.markdown("""
 
 
 def render_mermaid(mermaid_code: str, height: int = 450):
-    """Render a Mermaid diagram in Streamlit using Mermaid.js CDN."""
-    safe_code = mermaid_code.replace("`", "\\`").replace("</", "<\\/")
-    html = f"""
-    <div id="mermaid-wrapper" style="background:#0d1117;border-radius:12px;padding:1.5rem;">
-        <div class="mermaid" id="mermaid-diagram">
-{safe_code}
-        </div>
-        <div id="mermaid-error" style="display:none;color:#ff8888;padding:1rem;background:#3d1a1a;border-radius:8px;">
-            ⚠️ Diagram syntax error — the AI generated invalid Mermaid code. Try rephrasing your request.
-        </div>
-    </div>
-    <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-        mermaid.initialize({{
-            startOnLoad: false,
-            theme: 'dark',
-            themeVariables: {{
-                primaryColor: '#667eea',
-                primaryTextColor: '#fff',
-                primaryBorderColor: '#764ba2',
-                lineColor: '#888',
-                background: '#0d1117',
-                mainBkg: '#161b22',
-                nodeBorder: '#667eea',
-                clusterBkg: '#1c2128',
-                titleColor: '#667eea',
-                edgeLabelBackground: '#0d1117',
-            }}
-        }});
-        try {{
-            await mermaid.run({{ nodes: [document.getElementById('mermaid-diagram')] }});
-        }} catch (err) {{
-            document.getElementById('mermaid-diagram').style.display = 'none';
-            document.getElementById('mermaid-error').style.display = 'block';
-            console.error('Mermaid error:', err);
-        }}
-    </script>
-    """
-    st.components.v1.html(html, height=height)
+    """Render a Mermaid diagram using the streamlit-mermaid package."""
+    st_mermaid(mermaid_code, height=f"{height}px")
 
 
 # ── Pipeline singleton (cached in session state) ───────────────────────────────
