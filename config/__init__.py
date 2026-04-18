@@ -99,6 +99,8 @@ class PromptsConfig:
     rerank_instruction: str = _prompts["rerank_instruction"]
     fallback_response: str = _prompts["fallback_response"]
     thresholds: Dict[str, Any] = _prompts["thresholds"]
+    diagram_system_prompt: str = _prompts.get("diagram_system_prompt", "You are a Mermaid diagram expert. Output ONLY valid Mermaid syntax.")
+    diagram_prompt: str = _prompts.get("diagram_prompt", "Generate a Mermaid {diagram_type} diagram from the context below.\n\nContext:\n{context}\n\nRequest: {question}\n\nMermaid Diagram:")
 
 
 # ── API Keys (from environment) ───────────────────────────────────────────────

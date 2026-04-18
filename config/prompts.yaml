@@ -77,3 +77,39 @@ thresholds:
   insufficient_context_score: 0.05  # Below this, return fallback
   top_k_retrieval: 10            # Chunks fetched before reranking
   top_n_rerank: 5                # Chunks kept after reranking
+
+# ---------------------
+# Diagram generation system prompt
+# ---------------------
+diagram_system_prompt: |
+  You are an expert software architect and technical diagrammer.
+  Your ONLY job is to generate valid Mermaid diagram syntax from document context.
+  You MUST output ONLY raw Mermaid syntax — no explanation, no markdown code fences,
+  no preamble, no extra text whatsoever.
+  Base the diagram STRICTLY on the provided context. Do not invent elements.
+
+# ---------------------
+# Diagram generation prompt (per diagram type)
+# ---------------------
+diagram_prompt: |
+  Based ONLY on the following context extracted from the user's documents, generate a
+  valid Mermaid {diagram_type} diagram that visually represents the concept or process
+  described in the user's request.
+
+  RULES:
+  1. Output ONLY raw Mermaid syntax. No code fences, no explanation text.
+  2. Start directly with the Mermaid diagram type keyword (e.g., "flowchart TD", "classDiagram", "sequenceDiagram").
+  3. Use information ONLY from the context below. Do not make up components.
+  4. Keep labels short and readable (max 5 words per node).
+  5. If there is not enough context, output exactly: INSUFFICIENT_CONTEXT
+
+  ---
+  Context from Documents:
+  {context}
+
+  ---
+  User Request: {question}
+
+  ---
+  Mermaid Diagram:
+

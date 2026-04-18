@@ -78,6 +78,23 @@ st.markdown("""
         padding: 1rem;
         border-radius: 8px;
     }
+    .diagram-box {
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .diagram-type-badge {
+        background: #238636;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
     .stButton>button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -87,6 +104,39 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+
+def render_mermaid(mermaid_code: str, height: int = 450):
+    """Render a Mermaid diagram in Streamlit using Mermaid.js CDN."""
+    # Escape backticks and template literals in the code
+    safe_code = mermaid_code.replace("`", "\\`")
+    html = f"""
+    <div class="mermaid-wrapper" style="background:#0d1117;border-radius:12px;padding:1.5rem;">
+        <div class="mermaid" id="mermaid-diagram">
+{safe_code}
+        </div>
+    </div>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({{ 
+            startOnLoad: true, 
+            theme: 'dark',
+            themeVariables: {{
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#764ba2',
+                lineColor: '#888',
+                background: '#0d1117',
+                mainBkg: '#161b22',
+                nodeBorder: '#667eea',
+                clusterBkg: '#1c2128',
+                titleColor: '#667eea',
+                edgeLabelBackground: '#0d1117',
+            }}
+        }});
+    </script>
+    """
+    st.components.v1.html(html, height=height, scrolling=True)
 
 
 # ── Pipeline singleton (cached in session state) ───────────────────────────────
@@ -153,12 +203,23 @@ with st.sidebar:
         logging.getLogger("rag").setLevel(logging.DEBUG)
 
     st.divider()
-    st.markdown("*Powered by ChromaDB · Sentence-Transformers · Claude*")
+    st.markdown("### 📊 Diagram Types")
+    st.markdown("""
+    Ask for diagrams using natural language:
+    - `draw a flowchart of...`
+    - `create a class diagram for...`
+    - `show sequence diagram of...`
+    - `make an ER diagram of...`
+    - `mind map of...`
+    """)
+
+    st.divider()
+    st.markdown("*Powered by ChromaDB · Sentence-Transformers · OpenRouter*")
 
 
 # ── Main Area ─────────────────────────────────────────────────────────────────
 st.markdown('<div class="main-header">📚 Ask My Documents</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Upload documents and ask questions — answers grounded in your data with citations.</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Upload documents and ask questions — get answers with citations, or ask to <b>generate diagrams</b> from your content.</div>', unsafe_allow_html=True)
 
 # Show pipeline error at top if init failed
 if pipeline is None:
@@ -173,25 +234,34 @@ if "messages" not in st.session_state:
 # Display existing chat
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-        if "citations" in msg and msg["citations"]:
-            with st.expander("📌 Citations"):
-                for cit in msg["citations"]:
-                    st.markdown(f'<div class="citation-box">{cit}</div>', unsafe_allow_html=True)
-        if "chunks" in msg and msg["chunks"] and debug_mode:
-            with st.expander("🔍 Retrieved Chunks (debug)"):
-                for i, rc in enumerate(msg["chunks"], 1):
-                    st.markdown(
-                        f'<div class="chunk-card">'
-                        f'<b>[{i}]</b> <span class="score-badge">score: {rc.score:.4f}</span> '
-                        f'— <i>{rc.chunk.source}</i>, page {rc.chunk.page}<br><br>'
-                        f'{rc.chunk.text[:300]}{"…" if len(rc.chunk.text) > 300 else ""}'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
+        if msg.get("is_diagram") and msg.get("mermaid_code"):
+            st.markdown(
+                f'<span class="diagram-type-badge">📊 {msg.get("diagram_type", "diagram")}</span>',
+                unsafe_allow_html=True,
+            )
+            render_mermaid(msg["mermaid_code"])
+            with st.expander("</> Mermaid Source"):
+                st.code(msg["mermaid_code"], language="text")
+        else:
+            st.markdown(msg["content"])
+            if "citations" in msg and msg["citations"]:
+                with st.expander("📌 Citations"):
+                    for cit in msg["citations"]:
+                        st.markdown(f'<div class="citation-box">{cit}</div>', unsafe_allow_html=True)
+            if "chunks" in msg and msg["chunks"] and debug_mode:
+                with st.expander("🔍 Retrieved Chunks (debug)"):
+                    for i, rc in enumerate(msg["chunks"], 1):
+                        st.markdown(
+                            f'<div class="chunk-card">'
+                            f'<b>[{i}]</b> <span class="score-badge">score: {rc.score:.4f}</span> '
+                            f'— <i>{rc.chunk.source}</i>, page {rc.chunk.page}<br><br>'
+                            f'{rc.chunk.text[:300]}{"…" if len(rc.chunk.text) > 300 else ""}'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
 
 # Query input
-if query := st.chat_input("Ask a question about your documents…"):
+if query := st.chat_input("Ask a question or say 'draw a flowchart of the login process'…"):
     # Show user message
     st.session_state.messages.append({"role": "user", "content": query})
     with st.chat_message("user"):
@@ -203,6 +273,47 @@ if query := st.chat_input("Ask a question about your documents…"):
         st.session_state.messages.append({"role": "assistant", "content": warning})
         with st.chat_message("assistant"):
             st.warning(warning)
+
+    # ── Diagram Request ───────────────────────────────────────────────────────
+    elif pipeline.is_diagram_request(query):
+        with st.chat_message("assistant"):
+            with st.spinner("🎨 Generating diagram from your documents…"):
+                try:
+                    start = time.perf_counter()
+                    diag = pipeline.generate_diagram(query)
+                    elapsed = time.perf_counter() - start
+
+                    if diag.is_fallback:
+                        st.markdown(
+                            f'<div class="fallback-warning">⚠️ {diag.fallback_message}</div>',
+                            unsafe_allow_html=True,
+                        )
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": diag.fallback_message,
+                        })
+                    else:
+                        st.markdown(
+                            f'<span class="diagram-type-badge">📊 {diag.diagram_type}</span>',
+                            unsafe_allow_html=True,
+                        )
+                        render_mermaid(diag.mermaid_code)
+                        with st.expander("</> Mermaid Source Code"):
+                            st.code(diag.mermaid_code, language="text")
+                        st.caption(f"⚡ Generated in {elapsed:.2f}s | {len(diag.source_chunks)} chunks used")
+
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": f"Here is the {diag.diagram_type} diagram:",
+                            "is_diagram": True,
+                            "mermaid_code": diag.mermaid_code,
+                            "diagram_type": diag.diagram_type,
+                        })
+
+                except Exception as e:
+                    st.error(f"❌ Diagram generation error: {e}")
+
+    # ── Text Answer ───────────────────────────────────────────────────────────
     else:
         with st.chat_message("assistant"):
             with st.spinner("Searching documents and generating answer…"):
@@ -259,3 +370,4 @@ if query := st.chat_input("Ask a question about your documents…"):
                         "role": "assistant",
                         "content": f"Error: {e}",
                     })
+

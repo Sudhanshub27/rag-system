@@ -18,6 +18,7 @@ from chunking import SemanticChunker
 from config import retrieval_config
 from embeddings import EmbeddingEngine
 from generation import AnswerGenerator
+from generation.diagram_generator import DiagramGenerator, DiagramResponse, detect_diagram_type
 from ingestion import DocumentIngestionPipeline
 from retrieval import (
     BM25Retriever,
@@ -72,6 +73,7 @@ class RAGPipeline:
         )
 
         self._generator = AnswerGenerator()
+        self._diagram_generator = DiagramGenerator()
 
         # Track all chunks for BM25 index rebuilding
         self._all_chunks: List[Chunk] = []
@@ -175,6 +177,34 @@ class RAGPipeline:
         logger.info(f"Query answered in {elapsed:.2f}s | fallback={response.is_fallback}")
 
         return response
+
+    def generate_diagram(self, question: str) -> DiagramResponse:
+        """
+        Generate a Mermaid diagram from the knowledge base based on user request.
+
+        Args:
+            question: Natural language request, e.g. "draw a flowchart of login process"
+
+        Returns:
+            DiagramResponse with mermaid_code ready to render.
+        """
+        start = time.perf_counter()
+        logger.info(f"=== Diagram Request: '{question}' ===")
+
+        # Retrieve relevant chunks
+        retrieved = self._retriever.retrieve(question)
+
+        # Generate diagram
+        result = self._diagram_generator.generate(question, retrieved)
+
+        elapsed = time.perf_counter() - start
+        logger.info(f"Diagram generated in {elapsed:.2f}s | fallback={result.is_fallback}")
+
+        return result
+
+    def is_diagram_request(self, question: str) -> bool:
+        """Return True if the question is asking for a visual diagram."""
+        return detect_diagram_type(question) is not None
 
     # ── Utilities ─────────────────────────────────────────────────────────────
 
