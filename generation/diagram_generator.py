@@ -219,8 +219,17 @@ class DiagramGenerator:
         # Clean LLM output
         mermaid_code = _clean_mermaid_output(raw_output)
 
-        # Check if LLM signaled insufficient context
-        if "INSUFFICIENT_CONTEXT" in mermaid_code or not mermaid_code:
+        # Check if LLM signaled insufficient context or API failed
+        if raw_output == "API_ERROR_EMPTY_RESPONSE":
+            return DiagramResponse(
+                mermaid_code="",
+                diagram_type=diagram_type,
+                question=question,
+                source_chunks=retrieved_chunks,
+                is_fallback=True,
+                fallback_message="⚠️ The AI model (OpenRouter) returned an empty response. This usually happens when the free-tier API is overloaded or rate-limited. Please try again in a moment.",
+            )
+        elif "INSUFFICIENT_CONTEXT" in mermaid_code or not mermaid_code:
             return DiagramResponse(
                 mermaid_code="",
                 diagram_type=diagram_type,
@@ -266,6 +275,6 @@ class DiagramGenerator:
 
         if content is None:
             logger.warning("LLM returned None content for diagram request")
-            return "INSUFFICIENT_CONTEXT"
+            return "API_ERROR_EMPTY_RESPONSE"
 
         return content.strip()
