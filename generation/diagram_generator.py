@@ -71,7 +71,7 @@ def _normalize_mermaid_lines(code: str) -> str:
     fixed = []
     for line in code.splitlines():
         # Split where 2+ spaces occur between word characters (multi-statement lines)
-        parts = re.split(r'(?<=[\w\"\'\]\)])  +(?=[\w\"\'\[])', line)
+        parts = re.split(r'(?<=[\w"\]\)])  +(?=[\w"\[])', line)
         fixed.extend(parts)
     return "\n".join(fixed)
 
@@ -124,7 +124,7 @@ def _clean_mermaid_output(raw: str) -> str:
             if (len(diagram_lines) > 3
                     and len(words) > 6
                     and stripped[0].isupper()
-                    and not any(c in stripped for c in ["-->", "---", "::", ":", "||", "##", "(""])):
+                    and not any(c in stripped for c in ("-->", "---", "::", ":", "||", "##", "(", "[", "-"))):
                 break
             diagram_lines.append(line)
 
