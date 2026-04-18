@@ -31,7 +31,7 @@ DIAGRAM_KEYWORDS: dict[str, list[str]] = {
         "er diagram", "entity relationship", "database schema",
         "erd", "tables", "relations", "schema",
     ],
-    "mindmap": [
+    "flowchart LR": [
         "mind map", "mindmap", "concept map", "topic map",
         "key concepts", "summarize topics", "overview",
     ],
