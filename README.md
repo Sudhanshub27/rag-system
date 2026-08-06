@@ -3,6 +3,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Evaluation](https://img.shields.io/badge/eval-RAGAS-green.svg)](evaluation/)
+[![Lint](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml)
+[![Tests](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml/badge.svg?job=test)](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml)
 
 A **production-grade Retrieval-Augmented Generation (RAG)** system that lets you upload documents and ask questions, with answers **strictly grounded in evidence** and **explicit citations**.
 
@@ -198,6 +200,27 @@ Add items to `evaluation/golden_dataset.json`:
   "ground_truth": "The product carries a 12-month warranty…",
   "source_documents": ["manual.pdf"]
 }
+```
+
+---
+
+## 🧪 Testing
+
+The system includes unit and integration tests written with `pytest`.
+
+### Run fast unit tests (exceeds 70% coverage requirement on core modules)
+```bash
+pytest -m "not integration"
+```
+
+### Run full test suite (unit + pipeline integration)
+```bash
+pytest
+```
+
+### Generate coverage report for core logic modules
+```bash
+pytest --cov=chunking --cov=retrieval --cov=generation --cov-report=term-missing
 ```
 
 ---

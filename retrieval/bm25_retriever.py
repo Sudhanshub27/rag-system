@@ -48,6 +48,11 @@ class BM25Retriever:
             ) from e
 
         self._chunks = chunks
+        if not chunks:
+            self._bm25 = None
+            logger.info("BM25 index reset (0 chunks)")
+            return
+
         tokenized = [c.text.lower().split() for c in chunks]
         self._bm25 = BM25Okapi(tokenized)
         logger.info(f"BM25 index built over {len(chunks)} chunks")

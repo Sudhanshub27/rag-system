@@ -1,0 +1,4 @@
+Retrieval-Augmented Generation (RAG) is an architectural pattern that improves LLM responses.
+It combines a retrieval component with a generative model to provide grounded answers.
+Semantic chunking splits documents while preserving sentence boundaries and context.
+Vector stores enable fast similarity search over high-dimensional text embeddings.
