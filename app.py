@@ -173,10 +173,6 @@ with st.sidebar:
 
         # ── View & Delete Chunks UI ───────────────────────────────────────────
         with st.expander("🔍 View & Delete Chunks", expanded=False):
-            if not hasattr(pipeline, "get_all_chunks"):
-                st.cache_resource.clear()
-                st.rerun()
-
             all_chunks = pipeline.get_all_chunks()
             if not all_chunks:
                 st.caption("No chunks currently in database.")
