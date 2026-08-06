@@ -60,7 +60,9 @@ def main():
     ingest_parser.add_argument("source", help="Path to the document")
 
     # ingest-dir
-    ingest_dir_parser = subparsers.add_parser("ingest-dir", help="Ingest all docs in a directory")
+    ingest_dir_parser = subparsers.add_parser(
+        "ingest-dir", help="Ingest all docs in a directory"
+    )
     ingest_dir_parser.add_argument("directory", help="Path to the directory")
     ingest_dir_parser.add_argument(
         "--no-recursive", action="store_true", help="Do not recurse subdirectories"
@@ -75,7 +77,9 @@ def main():
     subparsers.add_parser("stats", help="Show knowledge base statistics")
 
     # delete
-    delete_parser = subparsers.add_parser("delete", help="Delete a document by source name")
+    delete_parser = subparsers.add_parser(
+        "delete", help="Delete a document by source name"
+    )
     delete_parser.add_argument("source", help="Filename as stored (e.g. report.pdf)")
 
     args = parser.parse_args()
@@ -88,9 +92,7 @@ def main():
         print(f"✅ Ingested {n} chunks from {args.source}")
 
     elif args.command == "ingest-dir":
-        n = pipeline.ingest_directory(
-            args.directory, recursive=not args.no_recursive
-        )
+        n = pipeline.ingest_directory(args.directory, recursive=not args.no_recursive)
         print(f"✅ Ingested {n} total chunks from {args.directory}")
 
     elif args.command == "query":

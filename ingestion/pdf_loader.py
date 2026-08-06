@@ -5,7 +5,6 @@ Falls back to pypdf if fitz is unavailable.
 """
 
 from pathlib import Path
-from typing import List
 
 from ingestion.base_loader import BaseLoader
 from utils.helpers import normalize_text
@@ -16,7 +15,7 @@ from utils.models import Document
 class PDFLoader(BaseLoader):
     """Load PDF files and extract per-page text with metadata."""
 
-    def load(self, source: str) -> List[Document]:
+    def load(self, source: str) -> list[Document]:
         """
         Extract text from each page of a PDF.
 
@@ -70,7 +69,7 @@ class PDFLoader(BaseLoader):
 
         return documents
 
-    def _load_with_pypdf(self, path: Path) -> List[Document]:
+    def _load_with_pypdf(self, path: Path) -> list[Document]:
         """Fallback PDF loader using pypdf library."""
         try:
             from pypdf import PdfReader

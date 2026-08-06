@@ -31,7 +31,7 @@ def main():
         "How does chunking work and what is the recommended overlap?",
         "What is Reciprocal Rank Fusion?",
         "What metrics are used to evaluate RAG systems?",
-        "What is the capital of France?",   # Should trigger fallback
+        "What is the capital of France?",  # Should trigger fallback
     ]
 
     for question in questions:

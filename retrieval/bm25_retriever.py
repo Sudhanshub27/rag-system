@@ -6,8 +6,6 @@ Used alongside vector search for hybrid retrieval.
 Library: rank_bm25 (BM25Okapi implementation)
 """
 
-from typing import List, Optional
-
 from utils.logger import logger
 from utils.models import Chunk, RetrievedChunk
 
@@ -23,8 +21,8 @@ class BM25Retriever:
         chunks: List of Chunk objects to build the index over.
     """
 
-    def __init__(self, chunks: Optional[List[Chunk]] = None):
-        self._chunks: List[Chunk] = []
+    def __init__(self, chunks: list[Chunk] | None = None):
+        self._chunks: list[Chunk] = []
         self._bm25 = None
 
         if chunks:
@@ -32,7 +30,7 @@ class BM25Retriever:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def build(self, chunks: List[Chunk]) -> None:
+    def build(self, chunks: list[Chunk]) -> None:
         """
         Build (or rebuild) the BM25 index from a list of chunks.
 
@@ -57,7 +55,7 @@ class BM25Retriever:
         self._bm25 = BM25Okapi(tokenized)
         logger.info(f"BM25 index built over {len(chunks)} chunks")
 
-    def query(self, query: str, top_k: int = 10) -> List[RetrievedChunk]:
+    def query(self, query: str, top_k: int = 10) -> list[RetrievedChunk]:
         """
         Retrieve top-K chunks by BM25 score.
 
@@ -76,11 +74,9 @@ class BM25Retriever:
         scores = self._bm25.get_scores(tokenized_query)
 
         # Pair chunks with scores and sort
-        scored = sorted(
-            enumerate(scores), key=lambda x: x[1], reverse=True
-        )
+        scored = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
 
-        results: List[RetrievedChunk] = []
+        results: list[RetrievedChunk] = []
         for idx, score in scored[:top_k]:
             if score <= 0.0:
                 break  # No more relevant results

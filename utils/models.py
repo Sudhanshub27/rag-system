@@ -4,7 +4,7 @@ Keeping models in one place prevents circular imports.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -17,9 +17,10 @@ class Document:
         source:   File path or URL the document was loaded from.
         metadata: Arbitrary key-value pairs (page numbers, titles, etc.).
     """
+
     content: str
     source: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -34,11 +35,12 @@ class Chunk:
         page:       Page number in source document (if applicable).
         metadata:   Additional metadata forwarded from the parent Document.
     """
+
     text: str
     source: str
     chunk_id: str
     page: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -51,6 +53,7 @@ class RetrievedChunk:
         score:      Relevance score (higher = more relevant).
         rank:       Position after reranking (1-indexed).
     """
+
     chunk: Chunk
     score: float
     rank: int = 0
@@ -68,8 +71,9 @@ class RAGResponse:
         query:             The original user query.
         is_fallback:       True when context was insufficient to answer.
     """
+
     answer: str
-    citations: List[str]
-    retrieved_chunks: List[RetrievedChunk]
+    citations: list[str]
+    retrieved_chunks: list[RetrievedChunk]
     query: str
     is_fallback: bool = False

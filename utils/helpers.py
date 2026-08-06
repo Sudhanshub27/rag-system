@@ -5,7 +5,6 @@ Utility helpers shared across modules.
 import hashlib
 import re
 import unicodedata
-from typing import List
 
 
 def generate_chunk_id(source: str, chunk_index: int, text: str) -> str:
@@ -34,7 +33,9 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"[^\S\n\t\r ]+", " ", text)
 
     # Remove non-printable characters
-    text = "".join(ch for ch in text if unicodedata.category(ch)[0] != "C" or ch in "\n\t\r")
+    text = "".join(
+        ch for ch in text if unicodedata.category(ch)[0] != "C" or ch in "\n\t\r"
+    )
 
     # Collapse multiple spaces
     text = re.sub(r" {2,}", " ", text)
@@ -55,7 +56,7 @@ def token_count_approx(text: str) -> int:
     return int(words / 0.75)
 
 
-def split_into_sentences(text: str) -> List[str]:
+def split_into_sentences(text: str) -> list[str]:
     """
     Split text into sentences using simple regex heuristics.
     Used by the chunker to preserve semantic sentence boundaries.
@@ -66,7 +67,7 @@ def split_into_sentences(text: str) -> List[str]:
     return [s.strip() for s in sentences if s.strip()]
 
 
-def format_citations(retrieved_chunks) -> List[str]:
+def format_citations(retrieved_chunks) -> list[str]:
     """
     Format retrieved chunks into citation strings for display.
 

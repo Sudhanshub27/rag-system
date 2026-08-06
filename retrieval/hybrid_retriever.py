@@ -11,8 +11,6 @@ Pipeline:
   5. Return top-N
 """
 
-from typing import Dict, List, Optional
-
 from config import retrieval_config
 from retrieval.bm25_retriever import BM25Retriever
 from retrieval.reranker import CrossEncoderReranker
@@ -40,8 +38,8 @@ class HybridRetriever:
         self,
         vector_store: ChromaVectorStore,
         embed_fn,
-        bm25_retriever: Optional[BM25Retriever] = None,
-        reranker: Optional[CrossEncoderReranker] = None,
+        bm25_retriever: BM25Retriever | None = None,
+        reranker: CrossEncoderReranker | None = None,
         top_k: int = retrieval_config.top_k,
         top_n_rerank: int = retrieval_config.top_n_rerank,
         bm25_weight: float = retrieval_config.bm25_weight,
@@ -58,11 +56,11 @@ class HybridRetriever:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def update_bm25(self, chunks: List[Chunk]) -> None:
+    def update_bm25(self, chunks: list[Chunk]) -> None:
         """Rebuild the BM25 index when the corpus changes."""
         self.bm25_retriever.build(chunks)
 
-    def retrieve(self, query: str) -> List[RetrievedChunk]:
+    def retrieve(self, query: str) -> list[RetrievedChunk]:
         """
         Full hybrid retrieval pipeline.
 
@@ -72,10 +70,14 @@ class HybridRetriever:
         Returns:
             List of RetrievedChunk objects, sorted by final relevance score.
         """
-        logger.info(f"Retrieval query: '{query[:80]}...' " if len(query) > 80 else f"Retrieval query: '{query}'")
+        logger.info(
+            f"Retrieval query: '{query[:80]}...' "
+            if len(query) > 80
+            else f"Retrieval query: '{query}'"
+        )
 
         # Stage 1: BM25 keyword retrieval
-        bm25_results: List[RetrievedChunk] = []
+        bm25_results: list[RetrievedChunk] = []
         if retrieval_config.use_bm25 and self.bm25_retriever.corpus_size > 0:
             bm25_results = self.bm25_retriever.query(query, top_k=self.top_k)
             logger.debug(f"BM25 returned {len(bm25_results)} chunks")
@@ -104,7 +106,9 @@ class HybridRetriever:
 
         logger.info(
             f"Final retrieval: {len(final)} chunk(s) returned. "
-            f"Top score: {final[0].score:.4f}" if final else "No chunks"
+            f"Top score: {final[0].score:.4f}"
+            if final
+            else "No chunks"
         )
         return final
 
@@ -112,10 +116,10 @@ class HybridRetriever:
 
     def _reciprocal_rank_fusion(
         self,
-        bm25_results: List[RetrievedChunk],
-        vector_results: List[RetrievedChunk],
+        bm25_results: list[RetrievedChunk],
+        vector_results: list[RetrievedChunk],
         k: int = 60,  # RRF constant (k=60 is the standard default)
-    ) -> List[RetrievedChunk]:
+    ) -> list[RetrievedChunk]:
         """
         Merge two ranked lists using Reciprocal Rank Fusion.
 
@@ -124,10 +128,10 @@ class HybridRetriever:
         This is list-rank-based, so original scores need not be on the
         same scale — it handles the BM25 vs cosine scale mismatch cleanly.
         """
-        rrf_scores: Dict[str, float] = {}
-        chunk_map: Dict[str, RetrievedChunk] = {}
+        rrf_scores: dict[str, float] = {}
+        chunk_map: dict[str, RetrievedChunk] = {}
 
-        def _update(results: List[RetrievedChunk], weight: float) -> None:
+        def _update(results: list[RetrievedChunk], weight: float) -> None:
             for rank, rc in enumerate(results, start=1):
                 cid = rc.chunk.chunk_id
                 rrf_scores[cid] = rrf_scores.get(cid, 0.0) + weight / (k + rank)

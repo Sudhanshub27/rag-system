@@ -4,11 +4,14 @@ Formats retrieved context into a prompt and calls the configured LLM.
 Enforces citation-grounded answers and detects insufficient-context situations.
 """
 
-import re
-from typing import List, Optional
-
-from config import ANTHROPIC_API_KEY, OPENAI_API_KEY, generation_config, prompts_config
-from config import DEEPSEEK_API_KEY, OPENROUTER_API_KEY
+from config import (
+    ANTHROPIC_API_KEY,
+    DEEPSEEK_API_KEY,
+    OPENAI_API_KEY,
+    OPENROUTER_API_KEY,
+    generation_config,
+    prompts_config,
+)
 from utils.helpers import format_citations
 from utils.logger import logger
 from utils.models import RAGResponse, RetrievedChunk
@@ -47,7 +50,7 @@ class AnswerGenerator:
     def generate(
         self,
         query: str,
-        retrieved_chunks: List[RetrievedChunk],
+        retrieved_chunks: list[RetrievedChunk],
         min_chunks_required: int = 1,
     ) -> RAGResponse:
         """
@@ -108,7 +111,7 @@ class AnswerGenerator:
     # ── Context builder ───────────────────────────────────────────────────────
 
     @staticmethod
-    def _build_context(chunks: List[RetrievedChunk]) -> str:
+    def _build_context(chunks: list[RetrievedChunk]) -> str:
         """
         Format retrieved chunks into a numbered context block.
 
@@ -131,11 +134,10 @@ class AnswerGenerator:
         """Initialize the appropriate LLM client."""
         if self.provider == "anthropic":
             if not ANTHROPIC_API_KEY:
-                raise EnvironmentError(
-                    "ANTHROPIC_API_KEY environment variable is not set."
-                )
+                raise OSError("ANTHROPIC_API_KEY environment variable is not set.")
             try:
                 import anthropic
+
                 return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
             except ImportError as e:
                 raise ImportError(
@@ -144,11 +146,10 @@ class AnswerGenerator:
 
         elif self.provider == "openai":
             if not OPENAI_API_KEY:
-                raise EnvironmentError(
-                    "OPENAI_API_KEY environment variable is not set."
-                )
+                raise OSError("OPENAI_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
+
                 return OpenAI(api_key=OPENAI_API_KEY)
             except ImportError as e:
                 raise ImportError(
@@ -158,12 +159,13 @@ class AnswerGenerator:
         elif self.provider == "deepseek":
             # DeepSeek exposes an OpenAI-compatible REST API
             if not DEEPSEEK_API_KEY:
-                raise EnvironmentError(
+                raise OSError(
                     "DEEPSEEK_API_KEY environment variable is not set. "
                     "Get a free key at https://platform.deepseek.com"
                 )
             try:
                 from openai import OpenAI
+
                 return OpenAI(
                     api_key=DEEPSEEK_API_KEY,
                     base_url="https://api.deepseek.com",
@@ -176,12 +178,13 @@ class AnswerGenerator:
         elif self.provider == "openrouter":
             # OpenRouter: OpenAI-compatible, supports 100s of free/paid models
             if not OPENROUTER_API_KEY:
-                raise EnvironmentError(
+                raise OSError(
                     "OPENROUTER_API_KEY environment variable is not set. "
                     "Get a free key at https://openrouter.ai/keys"
                 )
             try:
                 from openai import OpenAI
+
                 return OpenAI(
                     api_key=OPENROUTER_API_KEY,
                     base_url="https://openrouter.ai/api/v1",

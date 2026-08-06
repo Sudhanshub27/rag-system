@@ -5,7 +5,6 @@ a flat list of Document objects ready for chunking.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Type
 
 from config import ingestion_config
 from ingestion.base_loader import BaseLoader
@@ -26,20 +25,20 @@ class DocumentIngestionPipeline:
     """
 
     # Registry: extension → loader class
-    _LOADER_REGISTRY: Dict[str, Type[BaseLoader]] = {
+    _LOADER_REGISTRY: dict[str, type[BaseLoader]] = {
         ".pdf": PDFLoader,
         ".txt": TextLoader,
         ".md": MarkdownLoader,
         ".markdown": MarkdownLoader,
     }
 
-    def __init__(self, extra_loaders: Optional[Dict[str, Type[BaseLoader]]] = None):
+    def __init__(self, extra_loaders: dict[str, type[BaseLoader]] | None = None):
         """
         Args:
             extra_loaders: Optional dict of {".ext": LoaderClass} to extend
                            the built-in registry.
         """
-        self._loaders: Dict[str, BaseLoader] = {}
+        self._loaders: dict[str, BaseLoader] = {}
         if extra_loaders:
             self._LOADER_REGISTRY.update(extra_loaders)
 
@@ -55,7 +54,7 @@ class DocumentIngestionPipeline:
             self._loaders[ext] = self._LOADER_REGISTRY[ext]()
         return self._loaders[ext]
 
-    def ingest(self, source: str) -> List[Document]:
+    def ingest(self, source: str) -> list[Document]:
         """
         Ingest a single file.
 
@@ -92,7 +91,7 @@ class DocumentIngestionPipeline:
         self,
         directory: str,
         recursive: bool = True,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """
         Ingest all supported files in a directory.
 
@@ -108,12 +107,13 @@ class DocumentIngestionPipeline:
             raise NotADirectoryError(f"Not a directory: {directory}")
 
         pattern = "**/*" if recursive else "*"
-        all_docs: List[Document] = []
-        failed: List[str] = []
+        all_docs: list[Document] = []
+        failed: list[str] = []
 
         supported_exts = set(ingestion_config.supported_extensions)
         files = sorted(
-            f for f in dir_path.glob(pattern)
+            f
+            for f in dir_path.glob(pattern)
             if f.is_file() and f.suffix.lower() in supported_exts
         )
 

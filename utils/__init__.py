@@ -1,6 +1,5 @@
 """utils package"""
-from utils.logger import logger, setup_logger
-from utils.models import Chunk, Document, RAGResponse, RetrievedChunk
+
 from utils.helpers import (
     format_citations,
     generate_chunk_id,
@@ -8,17 +7,19 @@ from utils.helpers import (
     split_into_sentences,
     token_count_approx,
 )
+from utils.logger import logger, setup_logger
+from utils.models import Chunk, Document, RAGResponse, RetrievedChunk
 
 __all__ = [
-    "logger",
-    "setup_logger",
-    "Document",
     "Chunk",
-    "RetrievedChunk",
+    "Document",
     "RAGResponse",
+    "RetrievedChunk",
     "format_citations",
     "generate_chunk_id",
+    "logger",
     "normalize_text",
+    "setup_logger",
     "split_into_sentences",
     "token_count_approx",
 ]

@@ -6,7 +6,7 @@ the application. All modules import from here rather than reading YAML directly.
 
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 from dotenv import load_dotenv
@@ -18,21 +18,22 @@ load_dotenv()
 _CONFIG_DIR = Path(__file__).parent
 
 
-def _load_yaml(filename: str) -> Dict[str, Any]:
+def _load_yaml(filename: str) -> dict[str, Any]:
     """Load and parse a YAML config file."""
     path = _CONFIG_DIR / filename
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 # ── Load configs once at import time ──────────────────────────────────────────
-_settings: Dict[str, Any] = _load_yaml("settings.yaml")
-_prompts: Dict[str, Any] = _load_yaml("prompts.yaml")
+_settings: dict[str, Any] = _load_yaml("settings.yaml")
+_prompts: dict[str, Any] = _load_yaml("prompts.yaml")
 
 
 # ── Typed accessors ──────────────────────────────────────────────────────────
+
 
 class EmbeddingConfig:
     model_name: str = _settings["embeddings"]["model_name"]
@@ -87,8 +88,12 @@ class EvaluationConfig:
     golden_dataset_path: str = _settings["evaluation"]["golden_dataset_path"]
     output_path: str = _settings["evaluation"]["output_path"]
     faithfulness_threshold: float = _settings["evaluation"]["faithfulness_threshold"]
-    answer_correctness_threshold: float = _settings["evaluation"]["answer_correctness_threshold"]
-    context_relevance_threshold: float = _settings["evaluation"]["context_relevance_threshold"]
+    answer_correctness_threshold: float = _settings["evaluation"][
+        "answer_correctness_threshold"
+    ]
+    context_relevance_threshold: float = _settings["evaluation"][
+        "context_relevance_threshold"
+    ]
     fail_build_on_threshold: bool = _settings["evaluation"]["fail_build_on_threshold"]
 
 
@@ -98,9 +103,15 @@ class PromptsConfig:
     answer_prompt: str = _prompts["answer_prompt"]
     rerank_instruction: str = _prompts["rerank_instruction"]
     fallback_response: str = _prompts["fallback_response"]
-    thresholds: Dict[str, Any] = _prompts["thresholds"]
-    diagram_system_prompt: str = _prompts.get("diagram_system_prompt", "You are a Mermaid diagram expert. Output ONLY valid Mermaid syntax.")
-    diagram_prompt: str = _prompts.get("diagram_prompt", "Generate a Mermaid {diagram_type} diagram from the context below.\n\nContext:\n{context}\n\nRequest: {question}\n\nMermaid Diagram:")
+    thresholds: dict[str, Any] = _prompts["thresholds"]
+    diagram_system_prompt: str = _prompts.get(
+        "diagram_system_prompt",
+        "You are a Mermaid diagram expert. Output ONLY valid Mermaid syntax.",
+    )
+    diagram_prompt: str = _prompts.get(
+        "diagram_prompt",
+        "Generate a Mermaid {diagram_type} diagram from the context below.\n\nContext:\n{context}\n\nRequest: {question}\n\nMermaid Diagram:",
+    )
 
 
 # ── API Keys (from environment) ───────────────────────────────────────────────

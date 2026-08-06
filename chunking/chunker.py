@@ -9,13 +9,9 @@ Strategy:
      configured overlap (last N tokens of the previous chunk).
 """
 
-import uuid
-from typing import List
-
 from config import chunking_config
 from utils.helpers import (
     generate_chunk_id,
-    normalize_text,
     split_into_sentences,
     token_count_approx,
 )
@@ -50,7 +46,7 @@ class SemanticChunker:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def chunk(self, documents: List[Document]) -> List[Chunk]:
+    def chunk(self, documents: list[Document]) -> list[Chunk]:
         """
         Chunk a list of Documents.
 
@@ -60,7 +56,7 @@ class SemanticChunker:
         Returns:
             Flat list of Chunk objects with metadata.
         """
-        all_chunks: List[Chunk] = []
+        all_chunks: list[Chunk] = []
         for doc in documents:
             chunks = self._chunk_document(doc)
             all_chunks.extend(chunks)
@@ -73,14 +69,14 @@ class SemanticChunker:
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
-    def _chunk_document(self, doc: Document) -> List[Chunk]:
+    def _chunk_document(self, doc: Document) -> list[Chunk]:
         """Split a single Document into Chunks."""
         sentences = split_into_sentences(doc.content)
         if not sentences:
             return []
 
-        chunks: List[Chunk] = []
-        current_sentences: List[str] = []
+        chunks: list[Chunk] = []
+        current_sentences: list[str] = []
         current_tokens = 0
         chunk_index = 0
 
@@ -90,9 +86,7 @@ class SemanticChunker:
             # If a single sentence exceeds the chunk size, hard-split it
             if sentence_tokens > self.chunk_size:
                 if current_sentences:
-                    chunks.append(
-                        self._make_chunk(doc, current_sentences, chunk_index)
-                    )
+                    chunks.append(self._make_chunk(doc, current_sentences, chunk_index))
                     chunk_index += 1
                     current_sentences, current_tokens = self._carry_overlap(
                         current_sentences
@@ -129,9 +123,7 @@ class SemanticChunker:
         # Filter out tiny chunks
         return [c for c in chunks if token_count_approx(c.text) >= self.min_chunk_size]
 
-    def _make_chunk(
-        self, doc: Document, sentences: List[str], index: int
-    ) -> Chunk:
+    def _make_chunk(self, doc: Document, sentences: list[str], index: int) -> Chunk:
         """Assemble sentences into a Chunk with metadata."""
         text = " ".join(sentences).strip()
         return Chunk(
@@ -146,12 +138,12 @@ class SemanticChunker:
             },
         )
 
-    def _carry_overlap(self, sentences: List[str]):
+    def _carry_overlap(self, sentences: list[str]):
         """
         Return the suffix of sentences that sum to ~chunk_overlap tokens,
         along with their total token count.
         """
-        overlap_sentences: List[str] = []
+        overlap_sentences: list[str] = []
         token_sum = 0
         for sentence in reversed(sentences):
             t = token_count_approx(sentence)
@@ -161,7 +153,7 @@ class SemanticChunker:
             token_sum += t
         return overlap_sentences, token_sum
 
-    def _split_long_sentence(self, sentence: str) -> List[str]:
+    def _split_long_sentence(self, sentence: str) -> list[str]:
         """Hard-split a very long sentence into word-level sub-chunks."""
         words = sentence.split()
         sub_chunks = []

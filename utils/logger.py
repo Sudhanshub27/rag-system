@@ -21,7 +21,9 @@ def setup_logger(debug: bool = False) -> logging.Logger:
     Returns:
         Configured Logger instance.
     """
-    log_level = logging.DEBUG if debug else getattr(logging, logging_config.level, logging.INFO)
+    log_level = (
+        logging.DEBUG if debug else getattr(logging, logging_config.level, logging.INFO)
+    )
 
     # Ensure log directory exists
     log_path = Path(logging_config.log_file)

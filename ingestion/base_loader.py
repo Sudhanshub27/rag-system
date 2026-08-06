@@ -5,7 +5,6 @@ Each loader handles a specific file type and returns a list of Documents.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
 
 from utils.models import Document
 
@@ -14,7 +13,7 @@ class BaseLoader(ABC):
     """Abstract document loader interface."""
 
     @abstractmethod
-    def load(self, source: str) -> List[Document]:
+    def load(self, source: str) -> list[Document]:
         """
         Load one or more Documents from a source path or URL.
 

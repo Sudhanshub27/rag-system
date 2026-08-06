@@ -18,7 +18,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 # Ensure project root is on PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,12 +27,13 @@ from config import evaluation_config
 from pipeline import RAGPipeline
 from utils.logger import logger, setup_logger
 
-
 # ── Evaluation helpers ────────────────────────────────────────────────────────
 
-def cosine_similarity(vec_a: List[float], vec_b: List[float]) -> float:
+
+def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
     """Compute cosine similarity between two vectors."""
     import math
+
     dot = sum(a * b for a, b in zip(vec_a, vec_b))
     norm_a = math.sqrt(sum(a * a for a in vec_a))
     norm_b = math.sqrt(sum(b * b for b in vec_b))
@@ -57,7 +58,7 @@ def compute_answer_correctness(
 
 def compute_context_relevance(
     query: str,
-    retrieved_texts: List[str],
+    retrieved_texts: list[str],
     embedder,
 ) -> float:
     """
@@ -71,7 +72,7 @@ def compute_context_relevance(
     return sum(sims) / len(sims)
 
 
-def compute_faithfulness(answer: str, context_texts: List[str]) -> float:
+def compute_faithfulness(answer: str, context_texts: list[str]) -> float:
     """
     Heuristic faithfulness: fraction of answer sentences that contain
     at least one token overlap with the context.
@@ -101,12 +102,13 @@ def compute_faithfulness(answer: str, context_texts: List[str]) -> float:
 
 # ── RAGAS evaluator ───────────────────────────────────────────────────────────
 
+
 def try_ragas_eval(
-    questions: List[str],
-    answers: List[str],
-    contexts: List[List[str]],
-    ground_truths: List[str],
-) -> Dict[str, float]:
+    questions: list[str],
+    answers: list[str],
+    contexts: list[list[str]],
+    ground_truths: list[str],
+) -> dict[str, float]:
     """
     Attempt RAGAS evaluation. Returns empty dict if RAGAS is unavailable.
     """
@@ -145,7 +147,8 @@ def try_ragas_eval(
 
 # ── Main evaluation loop ──────────────────────────────────────────────────────
 
-def run_evaluation(debug: bool = False) -> Dict[str, Any]:
+
+def run_evaluation(debug: bool = False) -> dict[str, Any]:
     """
     Run evaluation against the golden dataset.
 
@@ -163,7 +166,7 @@ def run_evaluation(debug: bool = False) -> Dict[str, Any]:
             "Please create evaluation/golden_dataset.json first."
         )
 
-    with open(dataset_path, "r", encoding="utf-8") as f:
+    with open(dataset_path, encoding="utf-8") as f:
         golden = json.load(f)
 
     logger.info(f"Loaded {len(golden)} evaluation examples")
@@ -210,7 +213,8 @@ def run_evaluation(debug: bool = False) -> Dict[str, Any]:
                 "latency_seconds": round(elapsed, 3),
                 "passed": (
                     answer_correctness >= evaluation_config.answer_correctness_threshold
-                    and context_relevance >= evaluation_config.context_relevance_threshold
+                    and context_relevance
+                    >= evaluation_config.context_relevance_threshold
                     and faithfulness >= evaluation_config.faithfulness_threshold
                 ),
             }
@@ -233,7 +237,11 @@ def run_evaluation(debug: bool = False) -> Dict[str, Any]:
         per_question_results.append(result)
         questions.append(question)
         answers.append(result.get("predicted_answer", ""))
-        contexts.append([rc.chunk.text for rc in response.retrieved_chunks] if "is_fallback" in result else [])
+        contexts.append(
+            [rc.chunk.text for rc in response.retrieved_chunks]
+            if "is_fallback" in result
+            else []
+        )
         ground_truths.append(ground_truth)
 
     # Aggregate
@@ -277,10 +285,12 @@ def run_evaluation(debug: bool = False) -> Dict[str, Any]:
         json.dump(report, f, indent=2)
 
     logger.info(f"Evaluation report saved to {output_file}")
-    logger.info(f"=== RESULTS: pass_rate={aggregate['pass_rate']} | "
-                f"correctness={aggregate['avg_answer_correctness']} | "
-                f"relevance={aggregate['avg_context_relevance']} | "
-                f"faithfulness={aggregate['avg_faithfulness']} ===")
+    logger.info(
+        f"=== RESULTS: pass_rate={aggregate['pass_rate']} | "
+        f"correctness={aggregate['avg_answer_correctness']} | "
+        f"relevance={aggregate['avg_context_relevance']} | "
+        f"faithfulness={aggregate['avg_faithfulness']} ==="
+    )
 
     return report
 
@@ -317,8 +327,10 @@ if __name__ == "__main__":
     if args.fail_on_threshold or evaluation_config.fail_build_on_threshold:
         thresholds_met = (
             agg["avg_faithfulness"] >= evaluation_config.faithfulness_threshold
-            and agg["avg_answer_correctness"] >= evaluation_config.answer_correctness_threshold
-            and agg["avg_context_relevance"] >= evaluation_config.context_relevance_threshold
+            and agg["avg_answer_correctness"]
+            >= evaluation_config.answer_correctness_threshold
+            and agg["avg_context_relevance"]
+            >= evaluation_config.context_relevance_threshold
         )
         if not thresholds_met:
             print("\n❌  EVALUATION FAILED — scores below thresholds. Build blocked.")

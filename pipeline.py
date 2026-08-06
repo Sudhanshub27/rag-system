@@ -11,14 +11,16 @@ Typical usage:
 """
 
 import time
-from pathlib import Path
-from typing import List, Optional
 
 from chunking import SemanticChunker
 from config import retrieval_config
 from embeddings import EmbeddingEngine
 from generation import AnswerGenerator
-from generation.diagram_generator import DiagramGenerator, DiagramResponse, detect_diagram_type
+from generation.diagram_generator import (
+    DiagramGenerator,
+    DiagramResponse,
+    detect_diagram_type,
+)
 from ingestion import DocumentIngestionPipeline
 from retrieval import (
     BM25Retriever,
@@ -26,7 +28,6 @@ from retrieval import (
     CrossEncoderReranker,
     HybridRetriever,
 )
-from utils.helpers import format_citations
 from utils.logger import logger
 from utils.models import Chunk, RAGResponse
 
@@ -44,6 +45,7 @@ class RAGPipeline:
     def __init__(self, debug: bool = False):
         if debug:
             import logging
+
             logging.getLogger("rag").setLevel(logging.DEBUG)
 
         logger.info("Initializing RAG Pipeline…")
@@ -58,7 +60,7 @@ class RAGPipeline:
         self._bm25 = BM25Retriever()
 
         # Reranker (optional — skip if model unavailable)
-        self._reranker: Optional[CrossEncoderReranker] = None
+        self._reranker: CrossEncoderReranker | None = None
         if retrieval_config.use_reranker:
             try:
                 self._reranker = CrossEncoderReranker()
@@ -76,7 +78,7 @@ class RAGPipeline:
         self._diagram_generator = DiagramGenerator()
 
         # Track all chunks for BM25 index rebuilding
-        self._all_chunks: List[Chunk] = []
+        self._all_chunks: list[Chunk] = []
 
         logger.info("RAG Pipeline ready")
 
@@ -118,9 +120,7 @@ class RAGPipeline:
         self._bm25.build(self._all_chunks)
 
         elapsed = time.perf_counter() - start
-        logger.info(
-            f"Ingestion complete: {len(chunks)} chunks in {elapsed:.2f}s"
-        )
+        logger.info(f"Ingestion complete: {len(chunks)} chunks in {elapsed:.2f}s")
         return len(chunks)
 
     def ingest_directory(self, directory: str, recursive: bool = True) -> int:
@@ -174,7 +174,9 @@ class RAGPipeline:
         response = self._generator.generate(question, retrieved)
 
         elapsed = time.perf_counter() - start
-        logger.info(f"Query answered in {elapsed:.2f}s | fallback={response.is_fallback}")
+        logger.info(
+            f"Query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
+        )
 
         return response
 
@@ -198,7 +200,9 @@ class RAGPipeline:
         result = self._diagram_generator.generate(question, retrieved)
 
         elapsed = time.perf_counter() - start
-        logger.info(f"Diagram generated in {elapsed:.2f}s | fallback={result.is_fallback}")
+        logger.info(
+            f"Diagram generated in {elapsed:.2f}s | fallback={result.is_fallback}"
+        )
 
         return result
 

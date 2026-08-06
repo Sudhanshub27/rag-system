@@ -10,8 +10,6 @@ Why reranking?
   Typical pipeline: retrieve K candidates → rerank → keep top N.
 """
 
-from typing import List
-
 from config import retrieval_config
 from utils.logger import logger
 from utils.models import RetrievedChunk
@@ -37,6 +35,7 @@ class CrossEncoderReranker:
 
         try:
             from sentence_transformers import CrossEncoder
+
             self._model = CrossEncoder(model_name)
             logger.info("Cross-encoder reranker loaded successfully")
         except ImportError as e:
@@ -51,9 +50,9 @@ class CrossEncoderReranker:
     def rerank(
         self,
         query: str,
-        retrieved_chunks: List[RetrievedChunk],
+        retrieved_chunks: list[RetrievedChunk],
         min_score: float = 0.0,
-    ) -> List[RetrievedChunk]:
+    ) -> list[RetrievedChunk]:
         """
         Rerank retrieved chunks against the query.
 

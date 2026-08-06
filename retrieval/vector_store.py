@@ -3,7 +3,7 @@ ChromaDB Vector Store
 Persists chunk embeddings and metadata; supports add, query, and delete operations.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import chromadb
 from chromadb.config import Settings
@@ -47,16 +47,14 @@ class ChromaVectorStore:
             name=collection_name,
             metadata={"hnsw:space": "cosine"},  # Use cosine distance
         )
-        logger.info(
-            f"ChromaDB ready — {self._collection.count()} existing chunk(s)"
-        )
+        logger.info(f"ChromaDB ready — {self._collection.count()} existing chunk(s)")
 
     # ── Public API ────────────────────────────────────────────────────────────
 
     def add_chunks(
         self,
-        chunks: List[Chunk],
-        embeddings: List[List[float]],
+        chunks: list[Chunk],
+        embeddings: list[list[float]],
     ) -> None:
         """
         Add chunks and their embeddings to the collection.
@@ -74,8 +72,9 @@ class ChromaVectorStore:
 
         # Filter out already-stored chunks
         existing_ids = set(self._collection.get(include=[])["ids"])
-        new_chunks = [(c, e) for c, e in zip(chunks, embeddings)
-                      if c.chunk_id not in existing_ids]
+        new_chunks = [
+            (c, e) for c, e in zip(chunks, embeddings) if c.chunk_id not in existing_ids
+        ]
 
         if not new_chunks:
             logger.info("All chunks already in vector store — nothing to add")
@@ -100,10 +99,10 @@ class ChromaVectorStore:
 
     def query(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
-        where: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievedChunk]:
+        where: dict[str, Any] | None = None,
+    ) -> list[RetrievedChunk]:
         """
         Retrieve the top-K most similar chunks.
 
@@ -120,7 +119,7 @@ class ChromaVectorStore:
             logger.warning("Vector store is empty — no results to return")
             return []
 
-        kwargs: Dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             "query_embeddings": [query_embedding],
             "n_results": n_results,
             "include": ["documents", "metadatas", "distances"],
@@ -130,7 +129,7 @@ class ChromaVectorStore:
 
         results = self._collection.query(**kwargs)
 
-        retrieved: List[RetrievedChunk] = []
+        retrieved: list[RetrievedChunk] = []
         for doc, meta, dist in zip(
             results["documents"][0],
             results["metadatas"][0],
@@ -182,7 +181,7 @@ class ChromaVectorStore:
     # ── Internal ──────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _build_metadata(chunk: Chunk) -> Dict[str, Any]:
+    def _build_metadata(chunk: Chunk) -> dict[str, Any]:
         """Flatten chunk metadata to ChromaDB-compatible scalars."""
         meta = {
             "source": chunk.source,

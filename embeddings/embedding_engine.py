@@ -10,11 +10,7 @@ Features:
 
 import hashlib
 import json
-import os
 from pathlib import Path
-from typing import List, Optional
-
-import numpy as np
 
 from config import embedding_config
 from utils.logger import logger
@@ -37,7 +33,7 @@ class EmbeddingEngine:
         model_name: str = embedding_config.model_name,
         device: str = embedding_config.device,
         batch_size: int = embedding_config.batch_size,
-        cache_dir: Optional[str] = embedding_config.cache_dir,
+        cache_dir: str | None = embedding_config.cache_dir,
     ):
         self.model_name = model_name
         self.device = device
@@ -54,6 +50,7 @@ class EmbeddingEngine:
         logger.info(f"Loading embedding model: {model_name} on {device}")
         try:
             from sentence_transformers import SentenceTransformer
+
             self._model = SentenceTransformer(model_name, device=device)
             logger.info("Embedding model loaded successfully")
         except Exception as e:
@@ -62,7 +59,7 @@ class EmbeddingEngine:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def embed_chunks(self, chunks: List[Chunk]) -> List[List[float]]:
+    def embed_chunks(self, chunks: list[Chunk]) -> list[list[float]]:
         """
         Embed a list of Chunks in batches.
 
@@ -75,7 +72,7 @@ class EmbeddingEngine:
         texts = [chunk.text for chunk in chunks]
         return self.embed_texts(texts)
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         """
         Embed a list of raw strings, using the disk cache when possible.
 
@@ -85,9 +82,9 @@ class EmbeddingEngine:
         Returns:
             List of embedding vectors.
         """
-        embeddings: List[Optional[List[float]]] = [None] * len(texts)
-        uncached_indices: List[int] = []
-        uncached_texts: List[str] = []
+        embeddings: list[list[float] | None] = [None] * len(texts)
+        uncached_indices: list[int] = []
+        uncached_texts: list[str] = []
 
         # Check cache first
         for i, text in enumerate(texts):
@@ -114,7 +111,7 @@ class EmbeddingEngine:
 
         return embeddings  # type: ignore[return-value]
 
-    def embed_query(self, query: str) -> List[float]:
+    def embed_query(self, query: str) -> list[float]:
         """
         Embed a single query string.
 
@@ -132,7 +129,7 @@ class EmbeddingEngine:
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
-    def _encode_batch(self, texts: List[str]) -> List[List[float]]:
+    def _encode_batch(self, texts: list[str]) -> list[list[float]]:
         """Run the Sentence-Transformer model in batches."""
         try:
             vectors = self._model.encode(
@@ -159,7 +156,7 @@ class EmbeddingEngine:
     def _load_cache(self) -> dict:
         if self._cache_file.exists():
             try:
-                with open(self._cache_file, "r") as f:
+                with open(self._cache_file) as f:
                     data = json.load(f)
                 logger.debug(f"Loaded {len(data)} cached embeddings")
                 return data

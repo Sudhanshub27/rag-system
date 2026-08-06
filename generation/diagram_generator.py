@@ -7,7 +7,6 @@ Supports: flowchart, classDiagram, sequenceDiagram, erDiagram, mindmap.
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from utils.logger import logger
 from utils.models import RetrievedChunk
@@ -15,25 +14,55 @@ from utils.models import RetrievedChunk
 # Keywords that map a user's natural language request to a Mermaid diagram type
 DIAGRAM_KEYWORDS: dict[str, list[str]] = {
     "flowchart TD": [
-        "flowchart", "flow chart", "flow diagram", "process flow",
-        "workflow", "steps", "procedure", "algorithm", "how does",
-        "how it works", "dfd", "data flow",
+        "flowchart",
+        "flow chart",
+        "flow diagram",
+        "process flow",
+        "workflow",
+        "steps",
+        "procedure",
+        "algorithm",
+        "how does",
+        "how it works",
+        "dfd",
+        "data flow",
     ],
     "classDiagram": [
-        "class diagram", "class structure", "uml class", "classes",
-        "inheritance", "object model", "oop", "entities and attributes",
+        "class diagram",
+        "class structure",
+        "uml class",
+        "classes",
+        "inheritance",
+        "object model",
+        "oop",
+        "entities and attributes",
     ],
     "sequenceDiagram": [
-        "sequence diagram", "interaction diagram", "message flow",
-        "communication", "sequence of", "request response", "api flow",
+        "sequence diagram",
+        "interaction diagram",
+        "message flow",
+        "communication",
+        "sequence of",
+        "request response",
+        "api flow",
     ],
     "erDiagram": [
-        "er diagram", "entity relationship", "database schema",
-        "erd", "tables", "relations", "schema",
+        "er diagram",
+        "entity relationship",
+        "database schema",
+        "erd",
+        "tables",
+        "relations",
+        "schema",
     ],
     "flowchart LR": [
-        "mind map", "mindmap", "concept map", "topic map",
-        "key concepts", "summarize topics", "overview",
+        "mind map",
+        "mindmap",
+        "concept map",
+        "topic map",
+        "key concepts",
+        "summarize topics",
+        "overview",
     ],
 }
 
@@ -41,15 +70,16 @@ DIAGRAM_KEYWORDS: dict[str, list[str]] = {
 @dataclass
 class DiagramResponse:
     """Result of a diagram generation request."""
+
     mermaid_code: str
     diagram_type: str
     question: str
-    source_chunks: List[RetrievedChunk] = field(default_factory=list)
+    source_chunks: list[RetrievedChunk] = field(default_factory=list)
     is_fallback: bool = False
     fallback_message: str = ""
 
 
-def detect_diagram_type(query: str) -> Optional[str]:
+def detect_diagram_type(query: str) -> str | None:
     """
     Detect which Mermaid diagram type the user is requesting.
     Returns the Mermaid diagram type string, or None if not a diagram request.
@@ -78,9 +108,20 @@ def _normalize_mermaid_lines(code: str) -> str:
 
 # Valid Mermaid diagram type opening keywords
 _MERMAID_STARTS = [
-    "flowchart", "graph ", "graph\n", "sequenceDiagram", "classDiagram",
-    "erDiagram", "gantt", "pie", "mindmap", "stateDiagram", "journey",
-    "gitGraph", "quadrantChart", "xychart",
+    "flowchart",
+    "graph ",
+    "graph\n",
+    "sequenceDiagram",
+    "classDiagram",
+    "erDiagram",
+    "gantt",
+    "pie",
+    "mindmap",
+    "stateDiagram",
+    "journey",
+    "gitGraph",
+    "quadrantChart",
+    "xychart",
 ]
 
 
@@ -121,10 +162,15 @@ def _clean_mermaid_output(raw: str) -> str:
             blank_streak = 0
             # Stop if line looks like natural language prose (not diagram syntax)
             words = stripped.split()
-            if (len(diagram_lines) > 3
-                    and len(words) > 6
-                    and stripped[0].isupper()
-                    and not any(c in stripped for c in ("-->", "---", "::", ":", "||", "##", "(", "[", "-"))):
+            if (
+                len(diagram_lines) > 3
+                and len(words) > 6
+                and stripped[0].isupper()
+                and not any(
+                    c in stripped
+                    for c in ("-->", "---", "::", ":", "||", "##", "(", "[", "-")
+                )
+            ):
                 break
             diagram_lines.append(line)
 
@@ -139,6 +185,7 @@ class DiagramGenerator:
 
     def __init__(self):
         from generation.answer_generator import AnswerGenerator
+
         # Reuse the existing LLM client/config — no duplication
         self._base = AnswerGenerator()
         logger.info("DiagramGenerator initialized (reusing AnswerGenerator client)")
@@ -146,8 +193,8 @@ class DiagramGenerator:
     def generate(
         self,
         question: str,
-        retrieved_chunks: List[RetrievedChunk],
-        diagram_type: Optional[str] = None,
+        retrieved_chunks: list[RetrievedChunk],
+        diagram_type: str | None = None,
     ) -> DiagramResponse:
         """
         Generate a Mermaid diagram from retrieved chunks.
@@ -185,6 +232,7 @@ class DiagramGenerator:
         # Build prompt from prompts.yaml
         try:
             from config import prompts_config
+
             diagram_prompt = prompts_config.diagram_prompt.format(
                 diagram_type=diagram_type,
                 context=context,
@@ -239,7 +287,9 @@ class DiagramGenerator:
                 fallback_message="The documents don't contain enough information to draw this diagram.",
             )
 
-        logger.info(f"Diagram generated ({len(mermaid_code)} chars, type={diagram_type})")
+        logger.info(
+            f"Diagram generated ({len(mermaid_code)} chars, type={diagram_type})"
+        )
         return DiagramResponse(
             mermaid_code=mermaid_code,
             diagram_type=diagram_type,
