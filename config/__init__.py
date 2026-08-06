@@ -120,6 +120,7 @@ OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")
 DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
 # ── Singleton instances ───────────────────────────────────────────────────────
 embedding_config = EmbeddingConfig()

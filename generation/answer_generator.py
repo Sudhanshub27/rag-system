@@ -7,6 +7,7 @@ Enforces citation-grounded answers and detects insufficient-context situations.
 from config import (
     ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY,
+    GEMINI_API_KEY,
     OPENAI_API_KEY,
     OPENROUTER_API_KEY,
     generation_config,
@@ -22,11 +23,14 @@ class AnswerGenerator:
     Generate answers strictly grounded in retrieved chunks.
 
     Supports:
-      - Anthropic Claude (default)
+      - Anthropic Claude
       - OpenAI GPT models
+      - DeepSeek
+      - OpenRouter
+      - Google Gemini
 
     Args:
-        provider:    'anthropic' or 'openai'.
+        provider:    'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'.
         model:       Model name string.
         max_tokens:  Maximum tokens in the generated response.
         temperature: Sampling temperature (low = more deterministic).
@@ -131,7 +135,23 @@ class AnswerGenerator:
     # ── LLM callers ───────────────────────────────────────────────────────────
 
     def _init_client(self):
-        """Initialize the appropriate LLM client."""
+        """Initialize the appropriate LLM client with auto-detection if configured key is missing."""
+        provider = self.provider
+
+        # Auto-detect active provider if requested provider's key is not set in env
+        if provider == "anthropic" and not ANTHROPIC_API_KEY:
+            provider = self._auto_detect_provider()
+        elif provider == "openai" and not OPENAI_API_KEY:
+            provider = self._auto_detect_provider()
+        elif provider == "deepseek" and not DEEPSEEK_API_KEY:
+            provider = self._auto_detect_provider()
+        elif provider == "openrouter" and not OPENROUTER_API_KEY:
+            provider = self._auto_detect_provider()
+        elif provider == "gemini" and not GEMINI_API_KEY:
+            provider = self._auto_detect_provider()
+
+        self.provider = provider
+
         if self.provider == "anthropic":
             if not ANTHROPIC_API_KEY:
                 raise OSError("ANTHROPIC_API_KEY environment variable is not set.")
@@ -157,14 +177,16 @@ class AnswerGenerator:
                 ) from e
 
         elif self.provider == "deepseek":
-            # DeepSeek exposes an OpenAI-compatible REST API
             if not DEEPSEEK_API_KEY:
                 raise OSError(
                     "DEEPSEEK_API_KEY environment variable is not set. "
-                    "Get a free key at https://platform.deepseek.com"
+                    "Get a key at https://platform.deepseek.com"
                 )
             try:
                 from openai import OpenAI
+
+                if self.model == generation_config.model or "free" in self.model:
+                    self.model = "deepseek-chat"
 
                 return OpenAI(
                     api_key=DEEPSEEK_API_KEY,
@@ -176,11 +198,10 @@ class AnswerGenerator:
                 ) from e
 
         elif self.provider == "openrouter":
-            # OpenRouter: OpenAI-compatible, supports 100s of free/paid models
             if not OPENROUTER_API_KEY:
                 raise OSError(
                     "OPENROUTER_API_KEY environment variable is not set. "
-                    "Get a free key at https://openrouter.ai/keys"
+                    "Get a key at https://openrouter.ai/keys"
                 )
             try:
                 from openai import OpenAI
@@ -198,11 +219,52 @@ class AnswerGenerator:
                     "openai package not found. Run: pip install openai"
                 ) from e
 
+        elif self.provider == "gemini":
+            if not GEMINI_API_KEY:
+                raise OSError(
+                    "GEMINI_API_KEY environment variable is not set. "
+                    "Get a key at https://aistudio.google.com/app/apikey"
+                )
+            try:
+                from openai import OpenAI
+
+                if self.model == generation_config.model or "free" in self.model:
+                    self.model = "gemini-2.0-flash"
+
+                return OpenAI(
+                    api_key=GEMINI_API_KEY,
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                )
+            except ImportError as e:
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
+
         else:
             raise ValueError(
                 f"Unknown provider '{self.provider}'. "
-                "Use 'anthropic', 'openai', 'deepseek', or 'openrouter'."
+                "Use 'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'."
             )
+
+    @staticmethod
+    def _auto_detect_provider() -> str:
+        """Find the first available API key in environment variables."""
+        if DEEPSEEK_API_KEY:
+            logger.info("Auto-detected DEEPSEEK_API_KEY in environment")
+            return "deepseek"
+        if OPENROUTER_API_KEY:
+            logger.info("Auto-detected OPENROUTER_API_KEY in environment")
+            return "openrouter"
+        if GEMINI_API_KEY:
+            logger.info("Auto-detected GEMINI_API_KEY in environment")
+            return "gemini"
+        if ANTHROPIC_API_KEY:
+            logger.info("Auto-detected ANTHROPIC_API_KEY in environment")
+            return "anthropic"
+        if OPENAI_API_KEY:
+            logger.info("Auto-detected OPENAI_API_KEY in environment")
+            return "openai"
+        return "openrouter"
 
     def _call_llm(self, prompt: str) -> str:
         """Send prompt to LLM and return response text."""
@@ -211,8 +273,8 @@ class AnswerGenerator:
         try:
             if self.provider == "anthropic":
                 return self._call_anthropic(system_prompt, prompt)
-            elif self.provider in ("openai", "deepseek", "openrouter"):
-                # All three use the OpenAI-compatible client
+            elif self.provider in ("openai", "deepseek", "openrouter", "gemini"):
+                # All four use the OpenAI-compatible client
                 return self._call_openai(system_prompt, prompt)
         except Exception as e:
             logger.error(f"LLM call failed: {e}")

@@ -58,26 +58,32 @@ def test_answer_generator_provider_init_validation(monkeypatch, mocker):
     mocker.patch("anthropic.Anthropic")
     mocker.patch("openai.OpenAI")
 
+    # Clear all keys
+    monkeypatch.setattr("generation.answer_generator.ANTHROPIC_API_KEY", "")
+    monkeypatch.setattr("generation.answer_generator.OPENAI_API_KEY", "")
+    monkeypatch.setattr("generation.answer_generator.DEEPSEEK_API_KEY", "")
+    monkeypatch.setattr("generation.answer_generator.OPENROUTER_API_KEY", "")
+    monkeypatch.setattr("generation.answer_generator.GEMINI_API_KEY", "")
+
     # Invalid provider
     with pytest.raises(ValueError):
         AnswerGenerator(provider="invalid_provider")
 
-    # Missing API keys
-    monkeypatch.setattr("generation.answer_generator.ANTHROPIC_API_KEY", "")
+    # Missing API keys raises EnvironmentError
     with pytest.raises(EnvironmentError):
         AnswerGenerator(provider="anthropic")
 
-    monkeypatch.setattr("generation.answer_generator.OPENAI_API_KEY", "")
     with pytest.raises(EnvironmentError):
         AnswerGenerator(provider="openai")
 
-    monkeypatch.setattr("generation.answer_generator.DEEPSEEK_API_KEY", "")
     with pytest.raises(EnvironmentError):
         AnswerGenerator(provider="deepseek")
 
-    monkeypatch.setattr("generation.answer_generator.OPENROUTER_API_KEY", "")
     with pytest.raises(EnvironmentError):
         AnswerGenerator(provider="openrouter")
+
+    with pytest.raises(EnvironmentError):
+        AnswerGenerator(provider="gemini")
 
     # Valid API keys
     monkeypatch.setattr("generation.answer_generator.ANTHROPIC_API_KEY", "dummy-key")
@@ -95,6 +101,10 @@ def test_answer_generator_provider_init_validation(monkeypatch, mocker):
     monkeypatch.setattr("generation.answer_generator.OPENROUTER_API_KEY", "dummy-key")
     gen_openrouter = AnswerGenerator(provider="openrouter")
     assert gen_openrouter.provider == "openrouter"
+
+    monkeypatch.setattr("generation.answer_generator.GEMINI_API_KEY", "dummy-key")
+    gen_gemini = AnswerGenerator(provider="gemini")
+    assert gen_gemini.provider == "gemini"
 
 
 def test_call_anthropic_and_openai_methods(monkeypatch, mocker):
