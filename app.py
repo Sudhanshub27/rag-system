@@ -170,6 +170,38 @@ with st.sidebar:
         stats = pipeline.get_stats()
         st.metric("Chunks in DB", stats["total_chunks_in_vector_store"])
         st.metric("Embedding Model", stats["embedding_model"].split("/")[-1])
+
+        # ── View & Delete Chunks UI ───────────────────────────────────────────
+        with st.expander("🔍 View & Delete Chunks", expanded=False):
+            all_chunks = pipeline.get_all_chunks()
+            if not all_chunks:
+                st.caption("No chunks currently in database.")
+            else:
+                st.write(f"Showing **{len(all_chunks)}** chunk(s) stored in ChromaDB:")
+                for idx, c in enumerate(all_chunks, 1):
+                    st.markdown(
+                        f"**[{idx}] Source:** `{c.source}` (Page {c.page})  \n"
+                        f"`ID: {c.chunk_id[:16]}...`"
+                    )
+                    st.caption(f"{c.text[:250]}{'…' if len(c.text) > 250 else ''}")
+                    if st.button(
+                        f"🗑️ Delete Chunk #{idx}",
+                        key=f"del_btn_{c.chunk_id}_{idx}",
+                        use_container_width=True,
+                    ):
+                        pipeline.delete_chunk(c.chunk_id)
+                        st.success(f"Deleted Chunk #{idx}")
+                        st.rerun()
+                    st.markdown("---")
+
+                if st.button(
+                    "🚨 Reset / Delete All Chunks",
+                    key="clear_db_btn",
+                    use_container_width=True,
+                ):
+                    pipeline.reset_database()
+                    st.success("Database cleared!")
+                    st.rerun()
     else:
         st.error(f"Pipeline error: {_pipeline_error}")
 

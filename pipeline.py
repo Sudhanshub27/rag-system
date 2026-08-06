@@ -229,3 +229,23 @@ class RAGPipeline:
             self._bm25.build(self._all_chunks)
         logger.info(f"Deleted {deleted} chunks for '{source}'")
         return deleted
+
+    def delete_chunk(self, chunk_id: str) -> bool:
+        """Delete a single chunk by chunk_id."""
+        deleted = self._vector_store.delete_by_id(chunk_id)
+        if deleted:
+            self._all_chunks = [c for c in self._all_chunks if c.chunk_id != chunk_id]
+            if self._all_chunks:
+                self._bm25.build(self._all_chunks)
+        return deleted
+
+    def get_all_chunks(self) -> list[Chunk]:
+        """Return all chunks stored in the vector database."""
+        return self._vector_store.get_all_chunks()
+
+    def reset_database(self) -> None:
+        """Reset the vector database and clear all stored knowledge."""
+        self._vector_store.reset()
+        self._all_chunks = []
+        self._bm25.build([])
+        logger.warning("Vector store and BM25 index completely reset.")

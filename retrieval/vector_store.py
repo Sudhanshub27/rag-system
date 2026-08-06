@@ -165,6 +165,32 @@ class ChromaVectorStore:
             logger.info(f"Deleted {len(ids)} chunk(s) for source '{source}'")
         return len(ids)
 
+    def get_all_chunks(self) -> list[Chunk]:
+        """Fetch all chunks currently stored in ChromaDB."""
+        results = self._collection.get(include=["documents", "metadatas"])
+        chunks: list[Chunk] = []
+        if results and results.get("documents"):
+            for doc, meta in zip(results["documents"], results["metadatas"]):
+                chunks.append(
+                    Chunk(
+                        text=doc,
+                        source=meta.get("source", "unknown"),
+                        chunk_id=meta.get("chunk_id", ""),
+                        page=int(meta.get("page", 1)),
+                        metadata=meta,
+                    )
+                )
+        return chunks
+
+    def delete_by_id(self, chunk_id: str) -> bool:
+        """Delete a single chunk by chunk_id."""
+        results = self._collection.get(ids=[chunk_id], include=[])
+        if results and results.get("ids"):
+            self._collection.delete(ids=[chunk_id])
+            logger.info(f"Deleted chunk_id '{chunk_id}'")
+            return True
+        return False
+
     def count(self) -> int:
         """Return the number of chunks currently stored."""
         return self._collection.count()
