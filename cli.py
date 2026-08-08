@@ -53,6 +53,12 @@ def main():
         description="Production RAG System CLI",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument(
+        "--user-id",
+        "-u",
+        default="cli_user",
+        help="User ID for per-user data isolation (default: cli_user)",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # ingest
@@ -85,7 +91,7 @@ def main():
     args = parser.parse_args()
 
     setup_logger(debug=args.debug)
-    pipeline = RAGPipeline(debug=args.debug)
+    pipeline = RAGPipeline(user_id=args.user_id, debug=args.debug)
 
     if args.command == "ingest":
         n = pipeline.ingest(args.source)

@@ -9,33 +9,56 @@ import chromadb
 from chromadb.config import Settings
 
 from config import vector_store_config
+from utils.helpers import sanitize_collection_name
 from utils.logger import logger
 from utils.models import Chunk, RetrievedChunk
+
+# Multi-Tenancy Architecture Decision: Collection-Level Isolation vs Metadata Filtering
+#
+# Why Per-Collection Isolation (e.g. collection = f"user_{user_id}") is structurally safer:
+# 1. Structural Guarantee: Isolation is enforced at the database container level. It is physically
+#    impossible for a query in User A's collection to accidentally touch vectors in User B's collection,
+#    regardless of missing or malformed query filters.
+# 2. Risk of Metadata Leakage: Metadata filtering (where={"user_id": ...}) relies on software code
+#    flawlessly applying the filter on EVERY single query, count, delete, or retrieval call. If a developer
+#    forgets `where` in a new feature or if a third-party library bypasses it, data bleeds across tenants.
+# 3. Performance & Index Isolation: HNSW vector graph search index and BM25 inverted index are built
+#    specifically for that user's corpus, eliminating cross-tenant noise and improving recall speed.
 
 
 class ChromaVectorStore:
     """
     Thin wrapper around ChromaDB for storing and querying chunk embeddings.
 
-    The store keeps the collection persistent on disk so that embeddings
-    survive process restarts without recomputation.
+    Per-User Data Isolation:
+    ------------------------
+    Each user gets a dedicated, isolated collection named using their user_id
+    (e.g. `f"user_{user_id}"`).
 
     Args:
         persist_directory: Where ChromaDB stores its data on disk.
-        collection_name:   Name of the collection to use.
+        collection_name:   Optional explicit name of the collection.
+        user_id:           Optional user ID to derive collection name automatically.
     """
 
     def __init__(
         self,
         persist_directory: str = vector_store_config.persist_directory,
-        collection_name: str = vector_store_config.collection_name,
+        collection_name: str | None = None,
+        user_id: str | None = None,
     ):
+        if user_id:
+            collection_name = sanitize_collection_name(user_id)
+        elif not collection_name:
+            collection_name = vector_store_config.collection_name
+
         self.persist_directory = persist_directory
         self.collection_name = collection_name
+        self.user_id = user_id
 
         logger.info(
             f"Initializing ChromaDB at '{persist_directory}' "
-            f"(collection: '{collection_name}')"
+            f"(collection: '{collection_name}', user_id: '{user_id}')"
         )
 
         self._client = chromadb.PersistentClient(
@@ -44,10 +67,12 @@ class ChromaVectorStore:
         )
 
         self._collection = self._client.get_or_create_collection(
-            name=collection_name,
+            name=self.collection_name,
             metadata={"hnsw:space": "cosine"},  # Use cosine distance
         )
-        logger.info(f"ChromaDB ready — {self._collection.count()} existing chunk(s)")
+        logger.info(
+            f"ChromaDB ready for '{self.collection_name}' — {self._collection.count()} existing chunk(s)"
+        )
 
     # ── Public API ────────────────────────────────────────────────────────────
 

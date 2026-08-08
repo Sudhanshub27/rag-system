@@ -34,30 +34,38 @@ from utils.models import Chunk, RAGResponse
 
 class RAGPipeline:
     """
-    End-to-end RAG pipeline.
+    High-level facade orchestrating document ingestion, retrieval, reranking,
+    answer generation, and diagram creation.
 
-    All components are initialized lazily on first use to keep construction fast.
+    Per-User Isolation:
+    Each instance is bound to a specific `user_id`, using a separate ChromaDB collection
+    (`user_{user_id}`) and an isolated per-user BM25 index.
 
     Args:
-        debug: If True, increase logging verbosity.
+        user_id: Unique identifier for the user (default: "default_user").
+        debug:   If True, increase logging verbosity.
     """
 
-    def __init__(self, debug: bool = False):
+    def __init__(self, user_id: str = "default_user", debug: bool = False):
         if debug:
             import logging
 
             logging.getLogger("rag").setLevel(logging.DEBUG)
 
-        logger.info("Initializing RAG Pipeline…")
+        self.user_id = user_id
+        logger.info(f"Initializing RAG Pipeline for user_id='{user_id}'…")
 
-        # Component initialization
+        # Component initialization with per-user data isolation
         self._ingestion = DocumentIngestionPipeline()
         self._chunker = SemanticChunker()
         self._embedder = EmbeddingEngine()
-        self._vector_store = ChromaVectorStore()
+        self._vector_store = ChromaVectorStore(user_id=user_id)
 
-        # BM25 index (kept in memory alongside vector store)
+        # Per-user BM25 index (built strictly from user's chunks)
         self._bm25 = BM25Retriever()
+        self._all_chunks: list[Chunk] = self._vector_store.get_all_chunks()
+        if self._all_chunks:
+            self._bm25.build(self._all_chunks)
 
         # Reranker (optional — skip if model unavailable)
         self._reranker: CrossEncoderReranker | None = None
@@ -77,10 +85,9 @@ class RAGPipeline:
         self._generator = AnswerGenerator()
         self._diagram_generator = DiagramGenerator()
 
-        # Track all chunks for BM25 index rebuilding
-        self._all_chunks: list[Chunk] = []
-
-        logger.info("RAG Pipeline ready")
+        logger.info(
+            f"RAG Pipeline ready for user_id='{user_id}' — {len(self._all_chunks)} chunk(s) indexed"
+        )
 
     # ── Ingestion ─────────────────────────────────────────────────────────────
 

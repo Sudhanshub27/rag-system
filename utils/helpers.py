@@ -121,3 +121,23 @@ def get_pdf_page_image(pdf_path: str, page_num: int, dpi: int = 150) -> bytes | 
     except Exception:
         pass
     return None
+
+
+def sanitize_collection_name(user_id: str) -> str:
+    """
+    Sanitize a user identifier into a valid ChromaDB collection name.
+
+    ChromaDB collection name rules:
+    - Must be 3-63 characters long.
+    - Matches ^[a-zA-Z0-9_-]+$
+    - Starts and ends with an alphanumeric character.
+    """
+    clean = re.sub(r"[^a-zA-Z0-9_-]", "_", str(user_id)).strip("_")
+    if not clean:
+        clean = "default_user"
+    collection_name = f"user_{clean}"
+    if len(collection_name) > 63:
+        collection_name = collection_name[:63].rstrip("_")
+    while len(collection_name) < 3:
+        collection_name += "_usr"
+    return collection_name

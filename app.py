@@ -1,6 +1,6 @@
 """
 Streamlit Web UI for the RAG System
-Modern, Chat-Bubble Interface with Split-View Source Inspector & PDF Page Previews.
+Modern, Chat-Bubble Interface with Multi-Tenant Authentication & Per-User Data Isolation.
 
 Run with:
     streamlit run app.py
@@ -18,6 +18,7 @@ from streamlit_mermaid import st_mermaid
 sys.path.insert(0, str(Path(__file__).parent))
 
 from pipeline import RAGPipeline
+from utils.auth import authenticate_user, register_user
 from utils.helpers import get_pdf_page_image
 from utils.logger import setup_logger
 
@@ -212,21 +213,18 @@ def render_mermaid(mermaid_code: str, height: int = 450):
     st_mermaid(mermaid_code, height=f"{height}px")
 
 
-# ── Pipeline singleton (cached in session state) ───────────────────────────────
-@st.cache_resource(show_spinner="Initializing RAG pipeline…")
-def get_pipeline() -> RAGPipeline:
+# ── Pipeline Factory Cached Per User ID ──────────────────────────────────────
+@st.cache_resource(show_spinner="Initializing user knowledge base…")
+def get_user_pipeline(user_id: str) -> RAGPipeline:
     setup_logger()
-    return RAGPipeline()
+    return RAGPipeline(user_id=user_id)
 
-
-try:
-    pipeline = get_pipeline()
-    _pipeline_error = None
-except Exception as _e:
-    pipeline = None
-    _pipeline_error = str(_e)
 
 # ── Session State Initialization ──────────────────────────────────────────────
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_id" not in st.session_state:
+    st.session_state.user_id = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "selected_chunk" not in st.session_state:
@@ -234,9 +232,85 @@ if "selected_chunk" not in st.session_state:
 if "selected_citation" not in st.session_state:
     st.session_state.selected_citation = None
 
+# ── Authentication Gate ───────────────────────────────────────────────────────
+if not st.session_state.authenticated:
+    st.markdown(
+        '<div class="main-header">📚 Ask My Documents</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="sub-header">Multi-Tenant Secured RAG System — Log in to access your isolated document workspace.</div>',
+        unsafe_allow_html=True,
+    )
+
+    col_auth_left, col_auth_mid, col_auth_right = st.columns([1, 2, 1])
+    with col_auth_mid:
+        auth_tab_login, auth_tab_register = st.tabs(
+            ["🔑 Login", "📝 Register New Account"]
+        )
+
+        with auth_tab_login:
+            st.markdown("#### Log In to Your Account")
+            login_username = (
+                st.text_input("Username", key="login_username_input").strip().lower()
+            )
+            login_password = st.text_input(
+                "Password", type="password", key="login_password_input"
+            )
+
+            if st.button("🚀 Log In", use_container_width=True, key="login_submit_btn"):
+                user = authenticate_user(login_username, login_password)
+                if user:
+                    st.session_state.authenticated = True
+                    st.session_state.user_id = user["username"]
+                    st.session_state.user_email = user.get("email", "")
+                    st.success(f"Welcome back, {user['username']}!")
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password.")
+
+            st.caption(
+                "Default Seed Accounts: `demo_user` / `demo123`, `alice` / `alice123`, `bob` / `bob123`"
+            )
+
+        with auth_tab_register:
+            st.markdown("#### Create Private Account")
+            reg_username = (
+                st.text_input("Username", key="reg_username_input").strip().lower()
+            )
+            reg_email = st.text_input("Email", key="reg_email_input").strip()
+            reg_password = st.text_input(
+                "Password", type="password", key="reg_password_input"
+            )
+
+            if st.button(
+                "✨ Register Account",
+                use_container_width=True,
+                key="reg_submit_btn",
+            ):
+                if not reg_username or not reg_password:
+                    st.warning("Username and password are required.")
+                elif register_user(reg_username, reg_email, reg_password):
+                    st.success("Account created successfully! You can now log in.")
+                else:
+                    st.error(
+                        "Username already exists or fails validation requirements."
+                    )
+
+    st.stop()
+
+# ── User Logged In: Fetch User-Scoped Pipeline ────────────────────────────────
+current_user_id = st.session_state.user_id
+try:
+    pipeline = get_user_pipeline(current_user_id)
+    _pipeline_error = None
+except Exception as _e:
+    pipeline = None
+    _pipeline_error = str(_e)
+
 
 def get_ingested_docs_summary(p):
-    """Group chunks by document source."""
+    """Group chunks by document source for current user."""
     if not p:
         return []
     chunks = p.get_all_chunks()
@@ -251,8 +325,15 @@ def get_ingested_docs_summary(p):
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
+    st.markdown(f"### 👤 Account: `{current_user_id}`")
+    if st.button("🚪 Logout", use_container_width=True, key="logout_btn"):
+        st.session_state.clear()
+        st.rerun()
+
+    st.divider()
+
     st.markdown("## 📂 Document Upload")
-    st.markdown("Upload documents to build your knowledge base.")
+    st.markdown("Upload documents to build your private knowledge base.")
 
     uploaded_files = st.file_uploader(
         "Choose files",
@@ -263,12 +344,12 @@ with st.sidebar:
 
     if uploaded_files:
         if st.button("📥 Ingest Documents", use_container_width=True):
-            tmp_dir = Path("./tmp_uploads")
-            tmp_dir.mkdir(exist_ok=True)
+            user_upload_dir = Path(f"./tmp_uploads/{current_user_id}")
+            user_upload_dir.mkdir(exist_ok=True, parents=True)
 
             total_chunks = 0
             for uf in uploaded_files:
-                tmp_path = tmp_dir / uf.name
+                tmp_path = user_upload_dir / uf.name
                 tmp_path.write_bytes(uf.getvalue())
 
                 with st.spinner(f"Processing {uf.name}…"):
@@ -283,7 +364,7 @@ with st.sidebar:
 
     st.divider()
 
-    # Knowledge Base Stats & File Management
+    # Knowledge Base Stats & File Management (User-Scoped)
     st.markdown("### 📊 Knowledge Base Stats")
     if pipeline:
         stats = pipeline.get_stats()
@@ -341,7 +422,7 @@ with st.sidebar:
                     st.markdown("---")
 
                 if st.button(
-                    "🚨 Reset Database",
+                    "🚨 Reset My Database",
                     key="clear_db_btn",
                     use_container_width=True,
                 ):
@@ -366,7 +447,7 @@ with st.sidebar:
         logging.getLogger("rag").setLevel(logging.DEBUG)
 
     st.divider()
-    st.markdown("*Powered by ChromaDB · Sentence-Transformers · OpenRouter*")
+    st.markdown("*Isolated Workspace · ChromaDB · OpenRouter*")
 
 
 # ── Main Layout (Split View or Single Column) ─────────────────────────────────
@@ -382,32 +463,29 @@ with col_chat:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="sub-header">Upload documents and ask questions — get grounded answers with inline citations & page previews.</div>',
+        f'<div class="sub-header">Isolated workspace for user: <b>{current_user_id}</b></div>',
         unsafe_allow_html=True,
     )
 
-    # ── Prominent RAG vs ChatGPT Comparison Card ─────────────────────────────
+    # ── RAG vs ChatGPT Comparison Card ───────────────────────────────────────
     with st.expander(
         "⚖️ Why RAG vs. Pasting Documents into ChatGPT/Claude (Architecture Comparison)",
         expanded=False,
     ):
         st.markdown(
             "Pasting entire documents directly into a raw LLM prompt (such as ChatGPT or Claude) creates two fundamental failure modes: "
-            "**context overflow / distraction** (where high-noise, unindexed text degrades model attention and causes lost-in-the-middle phenomena) "
-            "and **lack of verifiability** (where responses cannot be traced back to exact pages or source claims).\n\n"
-            "A dedicated RAG architecture solves this by transforming unstructured document collections into an indexed, searchable knowledge base, "
-            "retrieving only the highest-relevance evidence chunks, enforcing strict inline citations, and measuring faithfulness quantitatively."
+            "**context overflow / distraction** and **lack of verifiability**.\n\n"
+            "A dedicated multi-tenant RAG architecture transforms unstructured documents into isolated vector indexes (`user_{user_id}`), "
+            "retrieving only highest-relevance evidence chunks with strict inline citations."
         )
         st.markdown("""
 | Dimension | Pasting Docs into ChatGPT / Claude | Production RAG Pipeline |
 |---|---|---|
-| **Document Size Limits** | Restricted by model context window; large multi-file collections overflow or get truncated. | Unlimited document corpus scaled across persistent ChromaDB vector store. |
+| **Document Size Limits** | Restricted by model context window; large multi-file collections overflow or get truncated. | Unlimited document corpus scaled across isolated ChromaDB vector collections. |
 | **Source Citations** | None or vague references; cannot verify which line or page generated a statement. | Enforced `[N]` citations per claim with page numbers, text excerpts & visual page previews. |
 | **Hallucination Control** | High risk; LLMs guess or improvise when relevant facts are missing from prompt. | Low temperature ($0.1$) + strict prompt guards + automated fallback "insufficient info" response. |
-| **Multi-Document Search** | Requires manual copy-pasting and re-formatting of every individual file into prompt window. | Hybrid BM25 (keyword) + Dense Vector (semantic) search across all ingested documents. |
+| **Data Isolation** | Multi-user chats risk prompt leakage if context windows are shared. | Per-user ChromaDB collection (`user_{id}`) & isolated BM25 index prevents cross-tenant leaks. |
 | **Answer Relevance** | Entire document dumped as noise; subject to "lost-in-the-middle" attention degradation. | Cross-Encoder reranking filters out noise, feeding only top-scoring evidence chunks to LLM. |
-| **Repeatability** | Manual, one-off chat window interaction with no API, CLI, or programmatic workflow. | Reusable, production pipeline accessible via Streamlit Web UI, CLI, and Python API. |
-| **Evaluation & QA** | No mechanism to measure response accuracy or ground truth alignment. | Automated Self-RAG metrics & RAGAS evaluation (faithfulness, correctness, relevance). |
         """)
 
     # Show pipeline error if init failed
@@ -469,10 +547,16 @@ with col_chat:
                             if rc and hasattr(rc, "chunk"):
                                 src = rc.chunk.source
                                 pg = rc.chunk.page
-                                pdf_path = Path("./tmp_uploads") / src
+                                user_pdf_path = (
+                                    Path(f"./tmp_uploads/{current_user_id}") / src
+                                )
                                 st.markdown(f"**[{idx+1}] `{src}` — Page {pg}**")
-                                if pdf_path.exists() and src.lower().endswith(".pdf"):
-                                    img_bytes = get_pdf_page_image(str(pdf_path), pg)
+                                if user_pdf_path.exists() and src.lower().endswith(
+                                    ".pdf"
+                                ):
+                                    img_bytes = get_pdf_page_image(
+                                        str(user_pdf_path), pg
+                                    )
                                     if img_bytes:
                                         st.image(
                                             img_bytes,
@@ -503,13 +587,11 @@ with col_chat:
                             )
 
     # ── Query Input ───────────────────────────────────────────────────────────
-    if query := st.chat_input(
-        "Ask a question or say 'draw a flowchart of the login process'…"
-    ):
+    if query := st.chat_input("Ask a question about your documents…"):
         st.session_state.messages.append({"role": "user", "content": query})
 
         if not pipeline or pipeline.get_stats()["total_chunks_in_vector_store"] == 0:
-            warning = "⚠️ No documents ingested yet. Please upload documents in the sidebar first."
+            warning = "⚠️ No documents ingested in your workspace yet. Please upload documents in the sidebar first."
             st.session_state.messages.append({"role": "assistant", "content": warning})
             st.rerun()
 
@@ -528,14 +610,13 @@ with col_chat:
                 st.rerun()
 
         else:
-            with st.spinner("Searching documents & reranking evidence…"):
+            with st.spinner("Searching your isolated workspace…"):
                 start = time.perf_counter()
                 response = pipeline.query(
                     query, use_hyde=use_hyde, use_multi_query=use_multi_query
                 )
                 elapsed = time.perf_counter() - start
 
-                # Select top chunk by default into Split Inspector
                 if response.retrieved_chunks:
                     st.session_state.selected_chunk = response.retrieved_chunks[0]
                     if response.citations:
@@ -567,7 +648,6 @@ if split_view and col_inspector:
         if selected_rc and hasattr(selected_rc, "chunk"):
             chunk = selected_rc.chunk
             score = getattr(selected_rc, "score", 0.0)
-            rank = getattr(selected_rc, "rank", 1)
 
             st.markdown(
                 f'<div class="inspector-card">'
@@ -583,17 +663,17 @@ if split_view and col_inspector:
             st.info(chunk.text)
 
             # High-Resolution PDF Page Snapshot Preview
-            pdf_path = Path("./tmp_uploads") / chunk.source
-            if pdf_path.exists() and chunk.source.lower().endswith(".pdf"):
+            user_pdf_path = Path(f"./tmp_uploads/{current_user_id}") / chunk.source
+            if user_pdf_path.exists() and chunk.source.lower().endswith(".pdf"):
                 st.markdown(f"##### 📸 PDF Page Snapshot (Page {chunk.page})")
-                img_bytes = get_pdf_page_image(str(pdf_path), chunk.page)
+                img_bytes = get_pdf_page_image(str(user_pdf_path), chunk.page)
                 if img_bytes:
                     st.image(
                         img_bytes,
                         caption=f"Visual Page Snapshot — {chunk.source} (Page {chunk.page})",
                         use_container_width=True,
                     )
-            elif not pdf_path.exists():
+            elif not user_pdf_path.exists():
                 st.caption("💡 Upload file in sidebar to see visual PDF snapshots.")
 
         else:
