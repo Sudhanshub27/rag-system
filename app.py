@@ -9,18 +9,22 @@ Run with:
 import logging
 import sys
 import time
+import warnings
 from pathlib import Path
-
-import streamlit as st
-from streamlit_mermaid import st_mermaid
 
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).parent))
+
+import streamlit as st
+from streamlit_mermaid import st_mermaid
 
 from pipeline import RAGPipeline
 from utils.auth import authenticate_user, register_user
 from utils.helpers import get_pdf_page_image
 from utils.logger import setup_logger
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=".*use_container_width.*")
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("sentence_transformers").setLevel(logging.ERROR)

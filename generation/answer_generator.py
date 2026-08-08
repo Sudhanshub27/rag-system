@@ -232,7 +232,15 @@ class AnswerGenerator:
         # 1. Strip <think>...</think> blocks
         text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
 
-        # 2. Check if text starts with thinking preamble before "Answer:" or "Final Answer:"
+        # 2. Strip safety guardrail metadata lines (e.g., "User Safety: safe")
+        text = re.sub(
+            r"^(user\s+safety:\s*safe\s*)+", "", text, flags=re.IGNORECASE
+        ).strip()
+        text = re.sub(
+            r"\n(user\s+safety:\s*safe\s*)+", "\n", text, flags=re.IGNORECASE
+        ).strip()
+
+        # 3. Check if text starts with thinking preamble before "Answer:" or "Final Answer:"
         for marker in ("\nAnswer:", "\nFinal Answer:", "Answer:"):
             if marker in text:
                 parts = text.split(marker, 1)
@@ -255,12 +263,12 @@ class AnswerGenerator:
                     text = parts[1]
                     break
 
-        # 3. Clean leading 'Answer:' or 'Final Answer:' labels
+        # 4. Clean leading 'Answer:' or 'Final Answer:' labels
         text = re.sub(
             r"^(Answer|Final Answer):\s*", "", text.strip(), flags=re.IGNORECASE
         )
 
-        # 4. Remove leftover leading preamble lines
+        # 5. Remove leftover leading preamble lines
         lines = text.splitlines()
         filtered_lines = []
         skipping_preamble = True
