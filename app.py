@@ -21,6 +21,7 @@ import logging
 from streamlit_mermaid import st_mermaid
 
 from pipeline import RAGPipeline
+from utils.helpers import get_pdf_page_image
 from utils.logger import setup_logger
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -118,6 +119,41 @@ st.markdown(
 def render_mermaid(mermaid_code: str, height: int = 450):
     """Render a Mermaid diagram using the streamlit-mermaid package."""
     st_mermaid(mermaid_code, height=f"{height}px")
+
+
+def render_citations_with_page_viewer(citations: list[str], retrieved_chunks=None):
+    """Render citation cards with expandable visual PDF page previews & document jump targets."""
+    with st.expander("📌 Citations & Document Page Viewer", expanded=True):
+        for i, cit in enumerate(citations):
+            st.markdown(
+                f'<div class="citation-box">{cit}</div>',
+                unsafe_allow_html=True,
+            )
+            # Find matching retrieved chunk if available
+            rc = (
+                retrieved_chunks[i]
+                if retrieved_chunks and i < len(retrieved_chunks)
+                else None
+            )
+            if rc and hasattr(rc, "chunk"):
+                source = rc.chunk.source
+                page = rc.chunk.page
+                pdf_path = Path("./tmp_uploads") / source
+
+                if pdf_path.exists() and source.lower().endswith(".pdf"):
+                    with st.expander(
+                        f"📖 Jump to {source} — Page {page}", expanded=False
+                    ):
+                        img_bytes = get_pdf_page_image(str(pdf_path), page)
+                        if img_bytes:
+                            st.image(
+                                img_bytes,
+                                caption=f"Document Page Snapshot — Page {page} ({source})",
+                                use_container_width=True,
+                            )
+                        st.info(
+                            f"**Retrieved Text Segment (Page {page}):**\n\n{rc.chunk.text}"
+                        )
 
 
 # ── Pipeline singleton (cached in session state) ───────────────────────────────
@@ -274,12 +310,7 @@ for msg in st.session_state.messages:
         else:
             st.markdown(msg["content"])
             if msg.get("citations"):
-                with st.expander("📌 Citations"):
-                    for cit in msg["citations"]:
-                        st.markdown(
-                            f'<div class="citation-box">{cit}</div>',
-                            unsafe_allow_html=True,
-                        )
+                render_citations_with_page_viewer(msg["citations"], msg.get("chunks"))
             if "chunks" in msg and msg["chunks"] and debug_mode:
                 with st.expander("🔍 Retrieved Chunks & ML Metrics (debug)"):
                     if "faithfulness" in msg:
@@ -380,14 +411,11 @@ if query := st.chat_input(
                     else:
                         st.markdown(response.answer)
 
-                    # Citations
+                    # Citations with visual page viewer
                     if response.citations:
-                        with st.expander("📌 Citations", expanded=True):
-                            for cit in response.citations:
-                                st.markdown(
-                                    f'<div class="citation-box">{cit}</div>',
-                                    unsafe_allow_html=True,
-                                )
+                        render_citations_with_page_viewer(
+                            response.citations, response.retrieved_chunks
+                        )
 
                     # Debug chunks & ML metrics
                     if debug_mode:

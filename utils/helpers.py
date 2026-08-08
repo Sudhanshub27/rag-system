@@ -5,6 +5,7 @@ Utility helpers shared across modules.
 import hashlib
 import re
 import unicodedata
+from pathlib import Path
 
 
 def generate_chunk_id(source: str, chunk_index: int, text: str) -> str:
@@ -86,3 +87,37 @@ def format_citations(retrieved_chunks) -> list[str]:
             snippet = snippet[:180] + "…"
         citations.append(f'[{i}] Source: {source}, Page: {page}\nExcerpt: "{snippet}"')
     return citations
+
+
+def get_pdf_page_image(pdf_path: str, page_num: int, dpi: int = 150) -> bytes | None:
+    """
+    Render a specific page of a PDF file into PNG image bytes using PyMuPDF (fitz).
+
+    Args:
+        pdf_path: Path to the PDF file.
+        page_num: 1-indexed page number.
+        dpi: Resolution in dots per inch (default: 150).
+
+    Returns:
+        PNG image bytes or None if rendering fails.
+    """
+    try:
+        import fitz  # PyMuPDF
+
+        path = Path(pdf_path)
+        if not path.exists():
+            return None
+
+        doc = fitz.open(str(path))
+        if 1 <= page_num <= len(doc):
+            page = doc[page_num - 1]
+            zoom = dpi / 72.0
+            matrix = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=matrix)
+            img_bytes = pix.tobytes("png")
+            doc.close()
+            return img_bytes
+        doc.close()
+    except Exception:
+        pass
+    return None
