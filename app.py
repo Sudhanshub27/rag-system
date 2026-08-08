@@ -38,7 +38,7 @@ st.markdown(
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-    html, body, [class*="st-"] {
+    html, body, .stApp {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
@@ -251,7 +251,12 @@ def render_mermaid(mermaid_code: str, height: int = 450):
 @st.cache_resource(show_spinner="Initializing pipeline...")
 def get_user_pipeline(user_id: str) -> RAGPipeline:
     setup_logger()
-    return RAGPipeline(user_id=user_id)
+    import importlib
+
+    import pipeline as pipeline_module
+
+    importlib.reload(pipeline_module)
+    return pipeline_module.RAGPipeline(user_id=user_id)
 
 
 # ── Session State Initialization ──────────────────────────────────────────────
@@ -329,6 +334,15 @@ if not st.session_state.authenticated:
 current_user_id = st.session_state.user_id
 try:
     pipeline = get_user_pipeline(current_user_id)
+    _pipeline_error = None
+except TypeError:
+    st.cache_resource.clear()
+    import importlib
+
+    import pipeline as pipeline_module
+
+    importlib.reload(pipeline_module)
+    pipeline = pipeline_module.RAGPipeline(user_id=current_user_id)
     _pipeline_error = None
 except Exception as _e:
     pipeline = None
