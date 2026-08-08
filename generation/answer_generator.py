@@ -93,24 +93,163 @@ class AnswerGenerator:
 
         # Call the LLM
         raw_answer = self._call_llm(prompt)
+        cleaned_answer = self._clean_reasoning(raw_answer)
 
         # Check for explicit fallback signal from LLM
-        is_fallback = prompts_config.fallback_response.lower() in raw_answer.lower()
+        is_fallback = prompts_config.fallback_response.lower() in cleaned_answer.lower()
 
         citations = format_citations(retrieved_chunks)
 
+        # Self-RAG ML Evaluation: Faithfulness & Context Relevance
+        faithfulness, relevance = self.evaluate_faithfulness_and_relevance(
+            cleaned_answer, query, retrieved_chunks
+        )
+
         logger.info(
             f"Answer generated. is_fallback={is_fallback}, "
-            f"len={len(raw_answer)} chars"
+            f"faithfulness={faithfulness}, relevance={relevance}, "
+            f"len={len(cleaned_answer)} chars"
         )
 
         return RAGResponse(
-            answer=raw_answer,
+            answer=cleaned_answer,
             citations=citations,
             retrieved_chunks=retrieved_chunks,
             query=query,
             is_fallback=is_fallback,
+            faithfulness_score=faithfulness,
+            relevance_score=relevance,
         )
+
+    def generate_hyde_doc(self, query: str) -> str:
+        """
+        Generate a hypothetical document passage for HyDE (Hypothetical Document Embeddings) retrieval.
+        """
+        prompt = (
+            f"Write a short, realistic 2-3 sentence passage that directly answers this question:\n"
+            f"Question: {query}\n\nPassage:"
+        )
+        try:
+            raw = self._call_llm(prompt)
+            return self._clean_reasoning(raw)
+        except Exception as e:
+            logger.warning(f"HyDE generation failed: {e}")
+            return query
+
+    def generate_query_expansions(self, query: str, num_queries: int = 2) -> list[str]:
+        """
+        Generate semantic variations of the user query for Multi-Query Expansion retrieval.
+        """
+        prompt = (
+            f"Generate {num_queries} alternative search queries for searching a document database.\n"
+            f"Output ONLY the queries, one per line. No numbers or prefixes.\n\nQuery: {query}"
+        )
+        try:
+            raw = self._call_llm(prompt)
+            cleaned = self._clean_reasoning(raw)
+            queries = [q.strip("- 123456789.") for q in cleaned.splitlines() if q.strip()]
+            return queries[:num_queries]
+        except Exception as e:
+            logger.warning(f"Query expansion failed: {e}")
+            return []
+
+    def evaluate_faithfulness_and_relevance(
+        self, answer: str, query: str, chunks: list[RetrievedChunk]
+    ) -> tuple[float, float]:
+        """
+        Compute quantitative Faithfulness and Context Relevance scores (Self-RAG evaluation).
+        """
+        if not answer or not chunks:
+            return 0.0, 0.0
+
+        import re
+
+        context_text = " ".join(rc.chunk.text.lower() for rc in chunks)
+
+        # Faithfulness: answer words present in context
+        words = [
+            w.lower()
+            for w in re.findall(r"\w{4,}", answer)
+            if w.lower() not in {"this", "that", "with", "from", "have", "been", "were", "source", "page"}
+        ]
+        if not words:
+            faithfulness = 1.0
+        else:
+            matches = sum(1 for w in words if w in context_text)
+            faithfulness = round(matches / len(words), 2)
+
+        # Context Relevance: query words present in context
+        q_words = [
+            w.lower()
+            for w in re.findall(r"\w{3,}", query)
+            if w.lower() not in {"what", "where", "when", "show", "give", "list", "tell", "from", "with"}
+        ]
+        if not q_words:
+            relevance = 1.0
+        else:
+            rel_matches = sum(1 for w in q_words if w in context_text)
+            relevance = round(min(1.0, rel_matches / len(q_words)), 2)
+
+        return min(1.0, max(0.0, faithfulness)), min(1.0, max(0.0, relevance))
+
+    @staticmethod
+    def _clean_reasoning(text: str) -> str:
+        """Strip internal reasoning traces, <think> tags, and meta preamble from model output."""
+        import re
+
+        if not text:
+            return ""
+
+        # 1. Strip <think>...</think> blocks
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
+
+        # 2. Check if text starts with thinking preamble before "Answer:" or "Final Answer:"
+        for marker in ("\nAnswer:", "\nFinal Answer:", "Answer:"):
+            if marker in text:
+                parts = text.split(marker, 1)
+                preamble = parts[0].strip().lower()
+                if any(
+                    k in preamble
+                    for k in (
+                        "we need to",
+                        "thinking",
+                        "reasoning",
+                        "context chunks",
+                        "instructions:",
+                        "let's analyze",
+                        "user question",
+                    )
+                ) or len(preamble) > 30:
+                    text = parts[1]
+                    break
+
+        # 3. Clean leading 'Answer:' or 'Final Answer:' labels
+        text = re.sub(r"^(Answer|Final Answer):\s*", "", text.strip(), flags=re.IGNORECASE)
+
+        # 4. Remove leftover leading preamble lines
+        lines = text.splitlines()
+        filtered_lines = []
+        skipping_preamble = True
+        for line in lines:
+            stripped = line.strip()
+            if skipping_preamble:
+                if any(
+                    stripped.lower().startswith(p)
+                    for p in (
+                        "we need to answer",
+                        "thinking process",
+                        "reasoning process",
+                        "the context chunks are",
+                        "we must cite",
+                    )
+                ):
+                    continue
+                if stripped:
+                    skipping_preamble = False
+            filtered_lines.append(line)
+
+        result = "\n".join(filtered_lines).strip()
+        return result if result else text.strip()
 
     # ── Context builder ───────────────────────────────────────────────────────
 

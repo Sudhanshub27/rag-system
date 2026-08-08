@@ -193,16 +193,31 @@ class ChromaVectorStore:
 
     def count(self) -> int:
         """Return the number of chunks currently stored."""
-        return self._collection.count()
+        try:
+            return self._collection.count()
+        except Exception:
+            self._collection = self._client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+            return self._collection.count()
 
     def reset(self) -> None:
-        """Delete and recreate the collection (destructive!)."""
+        """Delete all items from the collection without destroying collection reference."""
         logger.warning(f"Resetting collection '{self.collection_name}'")
-        self._client.delete_collection(self.collection_name)
-        self._collection = self._client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"hnsw:space": "cosine"},
-        )
+        try:
+            res = self._collection.get(include=[])
+            if res and res.get("ids"):
+                self._collection.delete(ids=res["ids"])
+        except Exception:
+            try:
+                self._client.delete_collection(self.collection_name)
+            except Exception:
+                pass
+            self._collection = self._client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
 
     # ── Internal ──────────────────────────────────────────────────────────────
 

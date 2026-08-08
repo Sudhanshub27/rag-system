@@ -154,28 +154,62 @@ class RAGPipeline:
 
     # ── Query ─────────────────────────────────────────────────────────────────
 
-    def query(self, question: str) -> RAGResponse:
+    def query(
+        self,
+        question: str,
+        use_hyde: bool = False,
+        use_multi_query: bool = False,
+    ) -> RAGResponse:
         """
-        Answer a question using the full RAG pipeline.
+        Answer a question using the full RAG pipeline with optional ML features.
 
         Args:
             question: Natural language question from the user.
+            use_hyde: Enable HyDE (Hypothetical Document Embeddings) retrieval.
+            use_multi_query: Enable Multi-Query Expansion retrieval.
 
         Returns:
-            RAGResponse with answer, citations, and source chunks.
+            RAGResponse with answer, citations, ML scores, and metadata.
         """
         start = time.perf_counter()
-        logger.info(f"=== Query: '{question}' ===")
+        logger.info(f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}) ===")
 
-        # Retrieve relevant chunks
-        retrieved = self._retriever.retrieve(question)
+        hyde_doc = ""
+        expanded_queries = []
+        search_query = question
 
-        # Generate answer
+        # ML Feature 1: HyDE Retrieval
+        if use_hyde:
+            logger.info("Generating hypothetical document for HyDE...")
+            hyde_doc = self._generator.generate_hyde_doc(question)
+            if hyde_doc:
+                search_query = f"{question}\n{hyde_doc}"
+
+        # ML Feature 2: Multi-Query Expansion
+        if use_multi_query:
+            logger.info("Generating query expansions...")
+            expanded_queries = self._generator.generate_query_expansions(question)
+            all_chunks = self._retriever.retrieve(search_query)
+            for eq in expanded_queries:
+                extra = self._retriever.retrieve(eq)
+                existing_ids = {rc.chunk.chunk_id for rc in all_chunks}
+                for rc in extra:
+                    if rc.chunk.chunk_id not in existing_ids:
+                        all_chunks.append(rc)
+                        existing_ids.add(rc.chunk.chunk_id)
+            retrieved = all_chunks[: self._retriever.top_n_rerank]
+        else:
+            retrieved = self._retriever.retrieve(search_query)
+
+        # Generate answer & compute Self-RAG metrics
         response = self._generator.generate(question, retrieved)
+        response.hyde_document = hyde_doc
+        response.expanded_queries = expanded_queries
 
         elapsed = time.perf_counter() - start
         logger.info(
-            f"Query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
+            f"Query answered in {elapsed:.2f}s | fallback={response.is_fallback} | "
+            f"faithfulness={response.faithfulness_score:.2f} | relevance={response.relevance_score:.2f}"
         )
 
         return response

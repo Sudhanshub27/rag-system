@@ -13,11 +13,11 @@ from utils.models import Document
 
 
 class PDFLoader(BaseLoader):
-    """Load PDF files and extract per-page text with metadata."""
+    """Load PDF files and extract per-page text with metadata and embedded hyperlinks."""
 
     def load(self, source: str) -> list[Document]:
         """
-        Extract text from each page of a PDF.
+        Extract text and hyperlinks from each page of a PDF.
 
         Args:
             source: Absolute or relative path to the PDF file.
@@ -38,7 +38,25 @@ class PDFLoader(BaseLoader):
             for page_num in range(len(pdf)):
                 page = pdf[page_num]
                 raw_text = page.get_text("text")
+
+                # Extract hyperlinks / annotations
+                links = page.get_links()
+                link_items = []
+                for l in links:
+                    uri = l.get("uri")
+                    if uri:
+                        rect = l.get("from")
+                        anchor_text = page.get_text("text", clip=rect).strip() if rect else ""
+                        anchor_clean = anchor_text.replace("\n", " ") if anchor_text else ""
+                        if anchor_clean:
+                            link_items.append(f"- {anchor_clean}: {uri}")
+                        else:
+                            link_items.append(f"- {uri}")
+
                 text = normalize_text(raw_text)
+
+                if link_items:
+                    text += "\n\n[Extracted Hyperlinks & URIs]:\n" + "\n".join(link_items)
 
                 if len(text) < 20:  # Skip effectively empty pages
                     continue
@@ -70,7 +88,7 @@ class PDFLoader(BaseLoader):
         return documents
 
     def _load_with_pypdf(self, path: Path) -> list[Document]:
-        """Fallback PDF loader using pypdf library."""
+        """Fallback PDF loader using pypdf library with link annotation extraction."""
         try:
             from pypdf import PdfReader
 
@@ -78,9 +96,27 @@ class PDFLoader(BaseLoader):
             documents = []
             for page_num, page in enumerate(reader.pages):
                 raw_text = page.extract_text() or ""
+
+                link_items = []
+                if "/Annots" in page:
+                    for annot in page["/Annots"]:
+                        try:
+                            obj = annot.get_object()
+                            if obj.get("/Subtype") == "/Link" and "/A" in obj:
+                                action = obj["/A"]
+                                if action.get("/S") == "/URI" and "/URI" in action:
+                                    uri = action["/URI"]
+                                    link_items.append(f"- {uri}")
+                        except Exception:
+                            pass
+
                 text = normalize_text(raw_text)
+                if link_items:
+                    text += "\n\n[Extracted Hyperlinks & URIs]:\n" + "\n".join(link_items)
+
                 if len(text) < 20:
                     continue
+
                 documents.append(
                     Document(
                         content=text,

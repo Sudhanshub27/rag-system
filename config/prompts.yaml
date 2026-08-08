@@ -16,6 +16,7 @@ system_prompt: |
   If the context does not contain enough information to answer the question,
   respond exactly with: "Insufficient information to answer based on the provided documents."
   Do NOT hallucinate or use outside knowledge.
+  Do NOT include internal reasoning, thinking process, preamble, or meta-commentary in your output. Output ONLY the direct final response.
 
 # ---------------------
 # Retrieval instruction
@@ -48,12 +49,8 @@ answer_prompt: |
   Instructions:
   1. Answer the question factually and concisely.
   2. Cite every claim with [N] where N matches the chunk number.
-  3. After the answer, list citations in this exact format:
-
-  Citations:
-  [1] Source: <filename>, Page: <page_number>
-  [2] Source: <filename>, Page: <page_number>
-  ...
+  3. Do NOT output your thought process, chain-of-thought, or internal reasoning.
+  4. Output ONLY the final answer text followed by citations.
 
   Answer:
 

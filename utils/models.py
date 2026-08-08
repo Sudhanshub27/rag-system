@@ -70,6 +70,10 @@ class RAGResponse:
         retrieved_chunks:  Raw chunks used to generate the answer.
         query:             The original user query.
         is_fallback:       True when context was insufficient to answer.
+        faithfulness_score: Groundedness score of answer against retrieved context (0-1).
+        relevance_score:   Relevance score of context against user query (0-1).
+        expanded_queries:  Multi-query expansion variants used during retrieval.
+        hyde_document:     Hypothetical document generated for HyDE retrieval.
     """
 
     answer: str
@@ -77,3 +81,7 @@ class RAGResponse:
     retrieved_chunks: list[RetrievedChunk]
     query: str
     is_fallback: bool = False
+    faithfulness_score: float = 0.0
+    relevance_score: float = 0.0
+    expanded_queries: list[str] = field(default_factory=list)
+    hyde_document: str = ""

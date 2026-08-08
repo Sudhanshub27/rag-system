@@ -75,19 +75,22 @@ st.markdown(
         font-size: 0.75rem;
         font-weight: 600;
     }
+    .ml-badge {
+        background: #2b1055;
+        border: 1px solid #764ba2;
+        color: #d8b4fe;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-right: 4px;
+    }
     .fallback-warning {
         background: #3d1a1a;
         border: 1px solid #ff4444;
         color: #ff8888;
         padding: 1rem;
         border-radius: 8px;
-    }
-    .diagram-box {
-        background: #0d1117;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 1rem;
-        margin: 0.5rem 0;
     }
     .diagram-type-badge {
         background: #238636;
@@ -206,6 +209,11 @@ with st.sidebar:
         st.error(f"Pipeline error: {_pipeline_error}")
 
     st.divider()
+    st.markdown("### 🤖 ML & RAG Features")
+    use_hyde = st.checkbox("🔮 HyDE Retrieval", value=False, help="Hypothetical Document Embeddings: Generates a sample answer to improve semantic search")
+    use_multi_query = st.checkbox("🔀 Multi-Query Expansion", value=False, help="Generates 2 query variations and merges candidates with RRF")
+
+    st.divider()
     st.markdown("### ⚙️ Settings")
     debug_mode = st.checkbox("Debug Mode", value=False)
     if debug_mode:
@@ -214,14 +222,11 @@ with st.sidebar:
         logging.getLogger("rag").setLevel(logging.DEBUG)
 
     st.divider()
-    st.markdown("### 📊 Diagram Types")
+    st.markdown("### 💡 What You Can Do")
     st.markdown("""
-    Ask for diagrams using natural language:
-    - `draw a flowchart of...`
-    - `create a class diagram for...`
-    - `show sequence diagram of...`
-    - `make an ER diagram of...`
-    - `mind map of...`
+    - 🔍 **Search for questions**
+    - 📌 **Get citations**
+    - 🎨 **Draw flowcharts**
     """)
 
     st.divider()
@@ -268,7 +273,13 @@ for msg in st.session_state.messages:
                             unsafe_allow_html=True,
                         )
             if "chunks" in msg and msg["chunks"] and debug_mode:
-                with st.expander("🔍 Retrieved Chunks (debug)"):
+                with st.expander("🔍 Retrieved Chunks & ML Metrics (debug)"):
+                    if "faithfulness" in msg:
+                        st.markdown(
+                            f'<span class="ml-badge">🎯 Faithfulness: {msg["faithfulness"]:.2f}</span>'
+                            f'<span class="ml-badge">⚡ Context Relevance: {msg.get("relevance", 0.0):.2f}</span>',
+                            unsafe_allow_html=True,
+                        )
                     for i, rc in enumerate(msg["chunks"], 1):
                         st.markdown(
                             f'<div class="chunk-card">'
@@ -280,9 +291,7 @@ for msg in st.session_state.messages:
                         )
 
 # Query input
-if query := st.chat_input(
-    "Ask a question or say 'draw a flowchart of the login process'…"
-):
+if query := st.chat_input("Ask a question or say 'draw a flowchart of the login process'…"):
     # Show user message
     st.session_state.messages.append({"role": "user", "content": query})
     with st.chat_message("user"):
@@ -346,7 +355,7 @@ if query := st.chat_input(
             with st.spinner("Searching documents and generating answer…"):
                 try:
                     start = time.perf_counter()
-                    response = pipeline.query(query)
+                    response = pipeline.query(query, use_hyde=use_hyde, use_multi_query=use_multi_query)
                     elapsed = time.perf_counter() - start
 
                     if response.is_fallback:
@@ -368,9 +377,19 @@ if query := st.chat_input(
                                     unsafe_allow_html=True,
                                 )
 
-                    # Debug chunks
-                    if debug_mode and response.retrieved_chunks:
-                        with st.expander("🔍 Retrieved Chunks (debug)"):
+                    # Debug chunks & ML metrics
+                    if debug_mode:
+                        with st.expander("🔍 ML Metrics & Retrieved Chunks (debug)"):
+                            st.markdown(
+                                f'<span class="ml-badge">🎯 Faithfulness: {response.faithfulness_score:.2f}</span>'
+                                f'<span class="ml-badge">⚡ Context Relevance: {response.relevance_score:.2f}</span>',
+                                unsafe_allow_html=True,
+                            )
+                            if response.expanded_queries:
+                                st.caption(f"🔀 Expanded Queries: {', '.join(response.expanded_queries)}")
+                            if response.hyde_document:
+                                st.caption(f"🔮 HyDE Passage: {response.hyde_document[:150]}…")
+
                             for i, rc in enumerate(response.retrieved_chunks, 1):
                                 st.markdown(
                                     f'<div class="chunk-card">'
@@ -382,7 +401,8 @@ if query := st.chat_input(
                                 )
 
                     st.caption(
-                        f"⚡ Answered in {elapsed:.2f}s | {len(response.retrieved_chunks)} chunks retrieved"
+                        f"⚡ Answered in {elapsed:.2f}s | {len(response.retrieved_chunks)} chunks retrieved | "
+                        f"Faithfulness: {response.faithfulness_score * 100:.0f}%"
                     )
 
                     # Store in history
@@ -392,6 +412,8 @@ if query := st.chat_input(
                             "content": response.answer,
                             "citations": response.citations,
                             "chunks": response.retrieved_chunks,
+                            "faithfulness": response.faithfulness_score,
+                            "relevance": response.relevance_score,
                         }
                     )
 
