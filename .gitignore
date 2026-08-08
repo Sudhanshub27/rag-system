@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 .cache/
 chroma_db/
+data/
 logs/
 tmp_uploads/
 evaluation/results/
@@ -13,3 +14,5 @@ build/
 .venv/
 venv/
 env/
+*.pkl
+
