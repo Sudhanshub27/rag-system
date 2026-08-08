@@ -7,11 +7,6 @@ Enforces citation-grounded answers and detects insufficient-context situations.
 import sys
 
 from config import (
-    ANTHROPIC_API_KEY,
-    DEEPSEEK_API_KEY,
-    GEMINI_API_KEY,
-    OPENAI_API_KEY,
-    OPENROUTER_API_KEY,
     generation_config,
     get_api_key,
     prompts_config,
@@ -19,6 +14,13 @@ from config import (
 from utils.helpers import format_citations
 from utils.logger import logger
 from utils.models import RAGResponse, RetrievedChunk
+
+# Module-level API key attributes (supports pytest monkeypatching & st.secrets)
+ANTHROPIC_API_KEY = get_api_key("ANTHROPIC_API_KEY")
+OPENAI_API_KEY = get_api_key("OPENAI_API_KEY")
+DEEPSEEK_API_KEY = get_api_key("DEEPSEEK_API_KEY")
+OPENROUTER_API_KEY = get_api_key("OPENROUTER_API_KEY")
+GEMINI_API_KEY = get_api_key("GEMINI_API_KEY")
 
 
 class AnswerGenerator:
