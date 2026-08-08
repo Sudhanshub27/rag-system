@@ -14,6 +14,17 @@ from dotenv import load_dotenv
 # Load .env first so env vars are available
 load_dotenv()
 
+# Streamlit Cloud secrets auto-injection into os.environ
+try:
+    import streamlit as st
+
+    if hasattr(st, "secrets"):
+        for k, v in st.secrets.items():
+            if isinstance(v, str) and k not in os.environ:
+                os.environ[k] = v.strip()
+except Exception:
+    pass
+
 # Resolve the config directory relative to this file
 _CONFIG_DIR = Path(__file__).parent
 
