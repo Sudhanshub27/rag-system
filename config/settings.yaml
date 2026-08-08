@@ -18,9 +18,9 @@ embeddings:
 # Chunking settings
 # ---------------------
 chunking:
-  chunk_size: 600          # Target tokens per chunk
-  chunk_overlap: 100       # Overlap tokens between chunks
-  min_chunk_size: 100      # Discard chunks smaller than this
+  chunk_size: 250          # Target tokens per chunk (optimal for pitch deck slides & documents)
+  chunk_overlap: 50        # Overlap tokens between chunks
+  min_chunk_size: 15       # Don't discard concise pitch deck slides/bullet points
 
 # ---------------------
 # Vector store (ChromaDB)
@@ -34,8 +34,8 @@ vector_store:
 # Retrieval settings
 # ---------------------
 retrieval:
-  top_k: 10                # Chunks fetched from vector store
-  top_n_rerank: 5          # Chunks kept after reranking
+  top_k: 12                # Chunks fetched from vector store
+  top_n_rerank: 6          # Chunks kept after reranking
   use_bm25: true           # Enable BM25 hybrid retrieval
   bm25_weight: 0.3         # Weight for BM25 scores in fusion
   vector_weight: 0.7       # Weight for vector scores in fusion

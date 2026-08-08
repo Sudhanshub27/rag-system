@@ -69,18 +69,20 @@ def split_into_sentences(text: str) -> list[str]:
 
 def format_citations(retrieved_chunks) -> list[str]:
     """
-    Format retrieved chunks into citation strings for display.
+    Format retrieved chunks into detailed citation strings for display.
 
     Args:
         retrieved_chunks: List of RetrievedChunk objects.
 
     Returns:
-        List of formatted citation strings like:
-        "[1] Source: file.pdf, Page: 3"
+        List of formatted citation strings with page numbers and text excerpts.
     """
     citations = []
     for i, rc in enumerate(retrieved_chunks, start=1):
         source = rc.chunk.source
         page = rc.chunk.page
-        citations.append(f"[{i}] Source: {source}, Page: {page}")
+        snippet = rc.chunk.text.replace("\n", " ").strip()
+        if len(snippet) > 180:
+            snippet = snippet[:180] + "…"
+        citations.append(f'[{i}] Source: {source}, Page: {page}\nExcerpt: "{snippet}"')
     return citations

@@ -199,9 +199,25 @@ class RAGPipeline:
                     if rc.chunk.chunk_id not in existing_ids:
                         all_chunks.append(rc)
                         existing_ids.add(rc.chunk.chunk_id)
-            retrieved = all_chunks[: self._retriever.top_n_rerank]
+            retrieved_pool = all_chunks
         else:
-            retrieved = self._retriever.retrieve(search_query)
+            retrieved_pool = self._retriever.retrieve(search_query)
+
+        # For broad queries (e.g., "explain pitch deck", "summary"), expand context limit
+        is_broad = any(
+            k in question.lower()
+            for k in (
+                "pitch deck",
+                "explain",
+                "summarize",
+                "overview",
+                "summary",
+                "all",
+                "deck",
+            )
+        )
+        max_chunks = 8 if is_broad else self._retriever.top_n_rerank
+        retrieved = retrieved_pool[:max_chunks]
 
         # Generate answer & compute Self-RAG metrics
         response = self._generator.generate(question, retrieved)

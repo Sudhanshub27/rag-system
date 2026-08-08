@@ -25,8 +25,10 @@ def test_answer_generator_citations_formatted(mock_llm_call):
         == "This is a test generated answer based on retrieved context [1]."
     )
     assert len(response.citations) == 2
-    assert response.citations[0] == "[1] Source: doc1.txt, Page: 2"
-    assert response.citations[1] == "[2] Source: doc2.txt, Page: 5"
+    assert response.citations[0].startswith("[1] Source: doc1.txt, Page: 2")
+    assert "RAG improves context." in response.citations[0]
+    assert response.citations[1].startswith("[2] Source: doc2.txt, Page: 5")
+    assert "Vector search retrieves chunks." in response.citations[1]
     assert mock_llm_call.called
 
 
