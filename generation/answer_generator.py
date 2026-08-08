@@ -4,6 +4,8 @@ Formats retrieved context into a prompt and calls the configured LLM.
 Enforces citation-grounded answers and detects insufficient-context situations.
 """
 
+import sys
+
 from config import (
     ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY,
@@ -11,6 +13,7 @@ from config import (
     OPENAI_API_KEY,
     OPENROUTER_API_KEY,
     generation_config,
+    get_api_key,
     prompts_config,
 )
 from utils.helpers import format_citations
@@ -302,50 +305,61 @@ class AnswerGenerator:
 
     # ── LLM callers ───────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _get_key(key_name: str) -> str:
+        """Retrieve API key from module attribute (if monkeypatched), env, or Streamlit secrets."""
+        mod_val = getattr(sys.modules[__name__], key_name, None)
+        if mod_val is not None:
+            return str(mod_val).strip()
+        return get_api_key(key_name)
+
     def _init_client(self):
         """Initialize the appropriate LLM client with auto-detection if configured key is missing."""
         provider = self.provider
 
-        # Auto-detect active provider if requested provider's key is not set in env
-        if provider == "anthropic" and not ANTHROPIC_API_KEY:
+        # Auto-detect active provider if requested provider's key is not set
+        if provider == "anthropic" and not self._get_key("ANTHROPIC_API_KEY"):
             provider = self._auto_detect_provider()
-        elif provider == "openai" and not OPENAI_API_KEY:
+        elif provider == "openai" and not self._get_key("OPENAI_API_KEY"):
             provider = self._auto_detect_provider()
-        elif provider == "deepseek" and not DEEPSEEK_API_KEY:
+        elif provider == "deepseek" and not self._get_key("DEEPSEEK_API_KEY"):
             provider = self._auto_detect_provider()
-        elif provider == "openrouter" and not OPENROUTER_API_KEY:
+        elif provider == "openrouter" and not self._get_key("OPENROUTER_API_KEY"):
             provider = self._auto_detect_provider()
-        elif provider == "gemini" and not GEMINI_API_KEY:
+        elif provider == "gemini" and not self._get_key("GEMINI_API_KEY"):
             provider = self._auto_detect_provider()
 
         self.provider = provider
 
         if self.provider == "anthropic":
-            if not ANTHROPIC_API_KEY:
+            key = self._get_key("ANTHROPIC_API_KEY")
+            if not key:
                 raise OSError("ANTHROPIC_API_KEY environment variable is not set.")
             try:
                 import anthropic
 
-                return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+                return anthropic.Anthropic(api_key=key)
             except ImportError as e:
                 raise ImportError(
                     "anthropic package not found. Run: pip install anthropic"
                 ) from e
 
         elif self.provider == "openai":
-            if not OPENAI_API_KEY:
+            key = self._get_key("OPENAI_API_KEY")
+            if not key:
                 raise OSError("OPENAI_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
 
-                return OpenAI(api_key=OPENAI_API_KEY)
+                return OpenAI(api_key=key)
             except ImportError as e:
                 raise ImportError(
                     "openai package not found. Run: pip install openai"
                 ) from e
 
         elif self.provider == "deepseek":
-            if not DEEPSEEK_API_KEY:
+            key = self._get_key("DEEPSEEK_API_KEY")
+            if not key:
                 raise OSError(
                     "DEEPSEEK_API_KEY environment variable is not set. "
                     "Get a key at https://platform.deepseek.com"
@@ -357,7 +371,7 @@ class AnswerGenerator:
                     self.model = "deepseek-chat"
 
                 return OpenAI(
-                    api_key=DEEPSEEK_API_KEY,
+                    api_key=key,
                     base_url="https://api.deepseek.com",
                 )
             except ImportError as e:
@@ -366,7 +380,8 @@ class AnswerGenerator:
                 ) from e
 
         elif self.provider == "openrouter":
-            if not OPENROUTER_API_KEY:
+            key = self._get_key("OPENROUTER_API_KEY")
+            if not key:
                 raise OSError(
                     "OPENROUTER_API_KEY environment variable is not set. "
                     "Get a key at https://openrouter.ai/keys"
@@ -375,7 +390,7 @@ class AnswerGenerator:
                 from openai import OpenAI
 
                 return OpenAI(
-                    api_key=OPENROUTER_API_KEY,
+                    api_key=key,
                     base_url="https://openrouter.ai/api/v1",
                     default_headers={
                         "HTTP-Referer": "https://github.com/Sudhanshub27/rag-system",
@@ -388,7 +403,8 @@ class AnswerGenerator:
                 ) from e
 
         elif self.provider == "gemini":
-            if not GEMINI_API_KEY:
+            key = self._get_key("GEMINI_API_KEY")
+            if not key:
                 raise OSError(
                     "GEMINI_API_KEY environment variable is not set. "
                     "Get a key at https://aistudio.google.com/app/apikey"
@@ -400,7 +416,7 @@ class AnswerGenerator:
                     self.model = "gemini-2.0-flash"
 
                 return OpenAI(
-                    api_key=GEMINI_API_KEY,
+                    api_key=key,
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                 )
             except ImportError as e:
@@ -414,23 +430,23 @@ class AnswerGenerator:
                 "Use 'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'."
             )
 
-    @staticmethod
-    def _auto_detect_provider() -> str:
-        """Find the first available API key in environment variables."""
-        if DEEPSEEK_API_KEY:
-            logger.info("Auto-detected DEEPSEEK_API_KEY in environment")
+    @classmethod
+    def _auto_detect_provider(cls) -> str:
+        """Find the first available API key in environment variables or Streamlit secrets."""
+        if cls._get_key("DEEPSEEK_API_KEY"):
+            logger.info("Auto-detected DEEPSEEK_API_KEY in environment/secrets")
             return "deepseek"
-        if OPENROUTER_API_KEY:
-            logger.info("Auto-detected OPENROUTER_API_KEY in environment")
+        if cls._get_key("OPENROUTER_API_KEY"):
+            logger.info("Auto-detected OPENROUTER_API_KEY in environment/secrets")
             return "openrouter"
-        if GEMINI_API_KEY:
-            logger.info("Auto-detected GEMINI_API_KEY in environment")
+        if cls._get_key("GEMINI_API_KEY"):
+            logger.info("Auto-detected GEMINI_API_KEY in environment/secrets")
             return "gemini"
-        if ANTHROPIC_API_KEY:
-            logger.info("Auto-detected ANTHROPIC_API_KEY in environment")
+        if cls._get_key("ANTHROPIC_API_KEY"):
+            logger.info("Auto-detected ANTHROPIC_API_KEY in environment/secrets")
             return "anthropic"
-        if OPENAI_API_KEY:
-            logger.info("Auto-detected OPENAI_API_KEY in environment")
+        if cls._get_key("OPENAI_API_KEY"):
+            logger.info("Auto-detected OPENAI_API_KEY in environment/secrets")
             return "openai"
         return "openrouter"
 

@@ -114,13 +114,27 @@ class PromptsConfig:
     )
 
 
-# ── API Keys (from environment) ───────────────────────────────────────────────
-ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")
-DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
-OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+def get_api_key(key_name: str) -> str:
+    """Retrieve API key from environment variables or Streamlit secrets."""
+    val = os.getenv(key_name, "").strip()
+    if not val:
+        try:
+            import streamlit as st
+
+            if hasattr(st, "secrets") and key_name in st.secrets:
+                val = str(st.secrets[key_name]).strip()
+        except Exception:
+            pass
+    return val
+
+
+# ── API Keys (from environment or Streamlit secrets) ──────────────────────────
+ANTHROPIC_API_KEY: str = get_api_key("ANTHROPIC_API_KEY")
+OPENAI_API_KEY: str = get_api_key("OPENAI_API_KEY")
+COHERE_API_KEY: str = get_api_key("COHERE_API_KEY")
+DEEPSEEK_API_KEY: str = get_api_key("DEEPSEEK_API_KEY")
+OPENROUTER_API_KEY: str = get_api_key("OPENROUTER_API_KEY")
+GEMINI_API_KEY: str = get_api_key("GEMINI_API_KEY")
 
 # ── Singleton instances ───────────────────────────────────────────────────────
 embedding_config = EmbeddingConfig()
