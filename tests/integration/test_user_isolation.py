@@ -34,7 +34,8 @@ def temp_user_docs(tmp_path):
     return str(doc_a), str(doc_b)
 
 
-def test_per_user_data_isolation(temp_user_docs, tmp_path):
+@pytest.mark.integration
+def test_per_user_data_isolation(temp_user_docs, tmp_path, mock_llm_call):
     doc_a_path, doc_b_path = temp_user_docs
 
     user_a_id = "test_user_alice_123"
