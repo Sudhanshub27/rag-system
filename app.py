@@ -22,6 +22,7 @@ from pipeline import RAGPipeline
 from utils.auth import authenticate_user, register_user
 from utils.helpers import get_pdf_page_image
 from utils.logger import setup_logger
+from utils.rate_limiter import RateLimitExceededError
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message=".*use_container_width.*")
@@ -680,9 +681,17 @@ with col_chat:
         else:
             with st.spinner("Retrieving evidence & generating answer..."):
                 start = time.perf_counter()
-                response = pipeline.query(
-                    query, use_hyde=use_hyde, use_multi_query=use_multi_query
-                )
+                try:
+                    response = pipeline.query(
+                        query, use_hyde=use_hyde, use_multi_query=use_multi_query
+                    )
+                except RateLimitExceededError as rle:
+                    st.error(f"Rate Limit Exceeded: {rle}")
+                    st.stop()
+                except Exception as ex:
+                    st.error(f"LLM Generation Error: {ex}")
+                    st.stop()
+
                 elapsed = time.perf_counter() - start
 
                 if response.retrieved_chunks:

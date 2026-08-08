@@ -486,14 +486,38 @@ class AnswerGenerator:
         return response.content[0].text.strip()
 
     def _call_openai(self, system: str, user: str) -> str:
-        """Call OpenAI Chat Completions API."""
-        response = self._client.chat.completions.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        )
-        return response.choices[0].message.content.strip()
+        """Call OpenAI Chat Completions API with OpenRouter model fallback resilience."""
+        models_to_try = [self.model]
+        if self.provider == "openrouter":
+            fallback_models = [
+                "google/gemini-2.0-flash-lite-preview-02-05:free",
+                "qwen/qwen-2.5-coder-32b-instruct:free",
+                "meta-llama/llama-3.1-8b-instruct:free",
+                "deepseek/deepseek-r1:free",
+            ]
+            for fb in fallback_models:
+                if fb not in models_to_try:
+                    models_to_try.append(fb)
+
+        last_error = None
+        for m in models_to_try:
+            try:
+                response = self._client.chat.completions.create(
+                    model=m,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                )
+                if m != self.model:
+                    logger.info(f"OpenRouter model fallback succeeded with model '{m}'")
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                last_error = e
+                logger.warning(
+                    f"Model '{m}' call failed: {e}. Trying fallback model..."
+                )
+
+        raise last_error

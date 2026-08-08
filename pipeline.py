@@ -30,6 +30,7 @@ from retrieval import (
 )
 from utils.logger import logger
 from utils.models import Chunk, RAGResponse
+from utils.rate_limiter import rate_limiter
 
 
 class RAGPipeline:
@@ -179,6 +180,7 @@ class RAGPipeline:
             RAGResponse with answer, citations, ML scores, and metadata.
         """
         start = time.perf_counter()
+        rate_limiter.check_rate_limit(self.user_id)
         logger.info(
             f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}) ==="
         )
