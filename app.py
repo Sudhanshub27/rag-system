@@ -273,6 +273,22 @@ with st.sidebar:
     - 🎨 **Draw flowcharts**
     """)
 
+    with st.expander("⚖️ Why RAG vs. Pasting into ChatGPT", expanded=False):
+        st.markdown(
+            "Pasting documents directly into ChatGPT/Claude causes two major issues: "
+            "**context limits/distraction** (unindexed text degrades model attention) "
+            "and **no verifiability** (claims cannot be traced back to exact pages).\n\n"
+            "| Dimension | Pasting Docs into ChatGPT / Claude | Production RAG Pipeline |\n"
+            "|---|---|---|\n"
+            "| **Document Size Limits** | Restricted by model context window; large collections overflow. | Unlimited document corpus scaled across persistent ChromaDB vector store. |\n"
+            "| **Source Citations** | None or vague references; cannot verify line or page source. | Enforced `[N]` citations per claim with page numbers & visual page previews. |\n"
+            "| **Hallucination Control** | High risk; LLMs guess when facts are missing from prompt. | Low temperature ($0.1$) + prompt guards + automated fallback response. |\n"
+            "| **Multi-Doc Search** | Manual copy-pasting & re-formatting of individual files. | Hybrid BM25 (keyword) + Dense Vector (semantic) search across all files. |\n"
+            "| **Answer Relevance** | Whole doc dumped as noise; subject to attention degradation. | Cross-Encoder reranking filters out noise, feeding top evidence chunks. |\n"
+            "| **Repeatability** | Manual, one-off chat window interaction; non-reusable. | Reusable, production pipeline accessible via Web UI, CLI, and Python API. |\n"
+            "| **Evaluation & QA** | No mechanism to measure accuracy or ground truth alignment. | Automated Self-RAG metrics & RAGAS evaluation (faithfulness, relevance). |"
+        )
+
     st.divider()
     st.markdown("*Powered by ChromaDB · Sentence-Transformers · OpenRouter*")
 
