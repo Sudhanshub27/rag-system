@@ -172,7 +172,9 @@ class RAGPipeline:
             RAGResponse with answer, citations, ML scores, and metadata.
         """
         start = time.perf_counter()
-        logger.info(f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}) ===")
+        logger.info(
+            f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}) ==="
+        )
 
         hyde_doc = ""
         expanded_queries = []

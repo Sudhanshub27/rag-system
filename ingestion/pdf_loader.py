@@ -42,12 +42,16 @@ class PDFLoader(BaseLoader):
                 # Extract hyperlinks / annotations
                 links = page.get_links()
                 link_items = []
-                for l in links:
-                    uri = l.get("uri")
+                for link_obj in links:
+                    uri = link_obj.get("uri")
                     if uri:
-                        rect = l.get("from")
-                        anchor_text = page.get_text("text", clip=rect).strip() if rect else ""
-                        anchor_clean = anchor_text.replace("\n", " ") if anchor_text else ""
+                        rect = link_obj.get("from")
+                        anchor_text = (
+                            page.get_text("text", clip=rect).strip() if rect else ""
+                        )
+                        anchor_clean = (
+                            anchor_text.replace("\n", " ") if anchor_text else ""
+                        )
                         if anchor_clean:
                             link_items.append(f"- {anchor_clean}: {uri}")
                         else:
@@ -56,7 +60,9 @@ class PDFLoader(BaseLoader):
                 text = normalize_text(raw_text)
 
                 if link_items:
-                    text += "\n\n[Extracted Hyperlinks & URIs]:\n" + "\n".join(link_items)
+                    text += "\n\n[Extracted Hyperlinks & URIs]:\n" + "\n".join(
+                        link_items
+                    )
 
                 if len(text) < 20:  # Skip effectively empty pages
                     continue
@@ -112,7 +118,9 @@ class PDFLoader(BaseLoader):
 
                 text = normalize_text(raw_text)
                 if link_items:
-                    text += "\n\n[Extracted Hyperlinks & URIs]:\n" + "\n".join(link_items)
+                    text += "\n\n[Extracted Hyperlinks & URIs]:\n" + "\n".join(
+                        link_items
+                    )
 
                 if len(text) < 20:
                     continue

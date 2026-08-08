@@ -210,8 +210,16 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 🤖 ML & RAG Features")
-    use_hyde = st.checkbox("🔮 HyDE Retrieval", value=False, help="Hypothetical Document Embeddings: Generates a sample answer to improve semantic search")
-    use_multi_query = st.checkbox("🔀 Multi-Query Expansion", value=False, help="Generates 2 query variations and merges candidates with RRF")
+    use_hyde = st.checkbox(
+        "🔮 HyDE Retrieval",
+        value=False,
+        help="Hypothetical Document Embeddings: Generates a sample answer to improve semantic search",
+    )
+    use_multi_query = st.checkbox(
+        "🔀 Multi-Query Expansion",
+        value=False,
+        help="Generates 2 query variations and merges candidates with RRF",
+    )
 
     st.divider()
     st.markdown("### ⚙️ Settings")
@@ -291,7 +299,9 @@ for msg in st.session_state.messages:
                         )
 
 # Query input
-if query := st.chat_input("Ask a question or say 'draw a flowchart of the login process'…"):
+if query := st.chat_input(
+    "Ask a question or say 'draw a flowchart of the login process'…"
+):
     # Show user message
     st.session_state.messages.append({"role": "user", "content": query})
     with st.chat_message("user"):
@@ -355,7 +365,9 @@ if query := st.chat_input("Ask a question or say 'draw a flowchart of the login 
             with st.spinner("Searching documents and generating answer…"):
                 try:
                     start = time.perf_counter()
-                    response = pipeline.query(query, use_hyde=use_hyde, use_multi_query=use_multi_query)
+                    response = pipeline.query(
+                        query, use_hyde=use_hyde, use_multi_query=use_multi_query
+                    )
                     elapsed = time.perf_counter() - start
 
                     if response.is_fallback:
@@ -386,9 +398,13 @@ if query := st.chat_input("Ask a question or say 'draw a flowchart of the login 
                                 unsafe_allow_html=True,
                             )
                             if response.expanded_queries:
-                                st.caption(f"🔀 Expanded Queries: {', '.join(response.expanded_queries)}")
+                                st.caption(
+                                    f"🔀 Expanded Queries: {', '.join(response.expanded_queries)}"
+                                )
                             if response.hyde_document:
-                                st.caption(f"🔮 HyDE Passage: {response.hyde_document[:150]}…")
+                                st.caption(
+                                    f"🔮 HyDE Passage: {response.hyde_document[:150]}…"
+                                )
 
                             for i, rc in enumerate(response.retrieved_chunks, 1):
                                 st.markdown(

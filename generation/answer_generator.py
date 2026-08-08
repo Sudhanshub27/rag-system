@@ -147,7 +147,9 @@ class AnswerGenerator:
         try:
             raw = self._call_llm(prompt)
             cleaned = self._clean_reasoning(raw)
-            queries = [q.strip("- 123456789.") for q in cleaned.splitlines() if q.strip()]
+            queries = [
+                q.strip("- 123456789.") for q in cleaned.splitlines() if q.strip()
+            ]
             return queries[:num_queries]
         except Exception as e:
             logger.warning(f"Query expansion failed: {e}")
@@ -170,7 +172,18 @@ class AnswerGenerator:
         words = [
             w.lower()
             for w in re.findall(r"\w{4,}", answer)
-            if w.lower() not in {"this", "that", "with", "from", "have", "been", "were", "source", "page"}
+            if w.lower()
+            not in {
+                "this",
+                "that",
+                "with",
+                "from",
+                "have",
+                "been",
+                "were",
+                "source",
+                "page",
+            }
         ]
         if not words:
             faithfulness = 1.0
@@ -182,7 +195,18 @@ class AnswerGenerator:
         q_words = [
             w.lower()
             for w in re.findall(r"\w{3,}", query)
-            if w.lower() not in {"what", "where", "when", "show", "give", "list", "tell", "from", "with"}
+            if w.lower()
+            not in {
+                "what",
+                "where",
+                "when",
+                "show",
+                "give",
+                "list",
+                "tell",
+                "from",
+                "with",
+            }
         ]
         if not q_words:
             relevance = 1.0
@@ -208,23 +232,28 @@ class AnswerGenerator:
             if marker in text:
                 parts = text.split(marker, 1)
                 preamble = parts[0].strip().lower()
-                if any(
-                    k in preamble
-                    for k in (
-                        "we need to",
-                        "thinking",
-                        "reasoning",
-                        "context chunks",
-                        "instructions:",
-                        "let's analyze",
-                        "user question",
+                if (
+                    any(
+                        k in preamble
+                        for k in (
+                            "we need to",
+                            "thinking",
+                            "reasoning",
+                            "context chunks",
+                            "instructions:",
+                            "let's analyze",
+                            "user question",
+                        )
                     )
-                ) or len(preamble) > 30:
+                    or len(preamble) > 30
+                ):
                     text = parts[1]
                     break
 
         # 3. Clean leading 'Answer:' or 'Final Answer:' labels
-        text = re.sub(r"^(Answer|Final Answer):\s*", "", text.strip(), flags=re.IGNORECASE)
+        text = re.sub(
+            r"^(Answer|Final Answer):\s*", "", text.strip(), flags=re.IGNORECASE
+        )
 
         # 4. Remove leftover leading preamble lines
         lines = text.splitlines()
