@@ -110,6 +110,24 @@ st.markdown(
         font-weight: 600;
         padding: 0.5rem 2rem;
     }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+    th {
+        background-color: #2b1055 !important;
+        color: #d8b4fe !important;
+        font-weight: 700;
+        text-align: left;
+        padding: 10px 14px;
+        border: 1px solid #764ba2;
+    }
+    td {
+        padding: 10px 14px;
+        border: 1px solid #333;
+        font-size: 0.9rem;
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -301,6 +319,30 @@ st.markdown(
     '<div class="sub-header">Upload documents and ask questions — get answers with citations, or ask to <b>generate diagrams</b> from your content.</div>',
     unsafe_allow_html=True,
 )
+
+# ── Prominent RAG vs ChatGPT Comparison Card on Main Site Page ─────────────────
+with st.expander(
+    "⚖️ Why RAG vs. Pasting Documents into ChatGPT/Claude (Click to View Comparison)",
+    expanded=False,
+):
+    st.markdown(
+        "Pasting entire documents directly into a raw LLM prompt (such as ChatGPT or Claude) creates two fundamental failure modes: "
+        "**context overflow / distraction** (where high-noise, unindexed text degrades model attention and causes lost-in-the-middle phenomena) "
+        "and **lack of verifiability** (where responses cannot be traced back to exact pages or source claims).\n\n"
+        "A dedicated RAG architecture solves this by transforming unstructured document collections into an indexed, searchable knowledge base, "
+        "retrieving only the highest-relevance evidence chunks, enforcing strict inline citations, and measuring faithfulness quantitatively."
+    )
+    st.markdown("""
+| Dimension | Pasting Docs into ChatGPT / Claude | Production RAG Pipeline |
+|---|---|---|
+| **Document Size Limits** | Restricted by model context window; large multi-file collections overflow or get truncated. | Unlimited document corpus scaled across persistent ChromaDB vector store. |
+| **Source Citations** | None or vague references; cannot verify which line or page generated a statement. | Enforced `[N]` citations per claim with page numbers, text excerpts & visual page previews. |
+| **Hallucination Control** | High risk; LLMs guess or improvise when relevant facts are missing from prompt. | Low temperature ($0.1$) + strict prompt guards + automated fallback "insufficient info" response. |
+| **Multi-Document Search** | Requires manual copy-pasting and re-formatting of every individual file into prompt window. | Hybrid BM25 (keyword) + Dense Vector (semantic) search across all ingested documents. |
+| **Answer Relevance** | Entire document dumped as noise; subject to "lost-in-the-middle" attention degradation. | Cross-Encoder reranking filters out noise, feeding only top-scoring evidence chunks to LLM. |
+| **Repeatability** | Manual, one-off chat window interaction with no API, CLI, or programmatic workflow. | Reusable, production pipeline accessible via Streamlit Web UI, CLI, and Python API. |
+| **Evaluation & QA** | No mechanism to measure response accuracy or ground truth alignment. | Automated Self-RAG metrics & RAGAS evaluation (faithfulness, correctness, relevance). |
+    """)
 
 # Show pipeline error at top if init failed
 if pipeline is None:
