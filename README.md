@@ -26,16 +26,15 @@ A **production-grade Retrieval-Augmented Generation (RAG)** system equipped with
 
 ## ✨ Key Features
 
-| Category | Capability | Details |
+| Category | Capability & Technology Stack | Technical Details |
 |---|---|---|
-| 📂 **Ingestion** | Layout-Aware & Hyperlink PDF Loader | PyMuPDF with embedded URI hyperlink extraction + pypdf fallback |
-| ✂️ **Chunking** | Pitch-Deck Optimized Semantic Chunker | Sentence boundary aware, 250 token target, 15 token min limit (preserves short slides) |
-| 🗄️ **Vector Store** | ChromaDB Vector Index | Disk-persisted embeddings using `SentenceTransformers all-MiniLM-L6-v2` |
-| 🔍 **Retrieval** | Hybrid Search (BM25 + Dense Vectors) | Combined via Reciprocal Rank Fusion (RRF) and Cross-Encoder reranking |
-| 🤖 **Advanced ML** | HyDE & Multi-Query Expansion | Semantic query expansion & hypothetical document generation |
-| 📊 **Metrics** | Self-RAG Quantitative Scoring | Real-time Faithfulness and Relevance metrics output per generation |
-| 📊 **Diagrams** | Mermaid Flowchart & Sequence Diagrams | Auto-generates flowchart and sequence diagrams from document text |
-| 💬 **Citations** | Quote-Enriched Excerpt Cards | Direct page numbers + highlighted text excerpts for full transparency |
+| 📂 **1. Ingestion & Docs** | Layout-Aware & Hyperlink PDF Ingestion | Extracts per-page text & embedded hyperlinks via `PyMuPDF` (`fitz`), with `pypdf` fallback. |
+| ✂️ **2. Chunking Strategy** | Pitch-Deck Optimized Semantic Chunker | Sentence-boundary aware regex splitting (`250` token size, `15` token min limit to preserve concise slides). |
+| 🗄️ **3. Embeddings & Storage** | Dense Vectors & Persistent ChromaDB | `SentenceTransformers all-MiniLM-L6-v2` (384-dim) with disk-cached hash lookups (`pkl`). |
+| 🔍 **4. Retrieval Engine** | Hybrid BM25 + Vector Search + Reranker | Combines `rank_bm25` and ChromaDB via RRF fusion + `ms-marco-MiniLM-L-6-v2` cross-encoder reranking. |
+| 🤖 **5. Generation & Guards** | Multi-LLM & Hallucination Prevention | Supports OpenRouter / Claude / DeepSeek / Gemini / OpenAI at temp `0.1` with enforced `[N]` citations & fallback response. |
+| 📊 **6. Evaluation & CI/CD** | Self-RAG Scoring & RAGAS Framework | Computes real-time Faithfulness/Relevance metrics; automated `pytest` and `ruff` GitHub Actions CI gates. |
+| 🖥️ **7. User Interfaces** | Interactive Streamlit Web UI & CLI | Web UI (`app.py`) with visual PDF page snapshots & Mermaid diagrams; full terminal CLI (`cli.py`). |
 
 ---
 
