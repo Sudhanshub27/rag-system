@@ -33,6 +33,37 @@ from utils.models import Chunk, RAGResponse
 from utils.rate_limiter import rate_limiter
 
 
+def is_summary_query(question: str) -> bool:
+    """
+    Detect broad summary or document overview requests using heuristic matching.
+    Matches queries like 'explain the document', 'summarize', 'give an overview', 'what is this about'.
+    """
+    q_lower = question.lower().strip()
+    summary_triggers = [
+        "explain the document",
+        "explain document",
+        "explain pdf",
+        "summarize the document",
+        "summarize pdf",
+        "summarize",
+        "summarise",
+        "give an overview",
+        "give overview",
+        "what is this about",
+        "what is the document about",
+        "what is this pdf about",
+        "document summary",
+        "pdf summary",
+        "explain the pitch deck",
+        "explain pitch deck",
+    ]
+    return any(trigger in q_lower for trigger in summary_triggers) or q_lower in [
+        "summary",
+        "overview",
+        "explain",
+    ]
+
+
 class RAGPipeline:
     """
     High-level facade orchestrating document ingestion, retrieval, reranking,
@@ -197,7 +228,21 @@ class RAGPipeline:
             f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}) ==="
         )
 
+        # Section-Structured Summarization Route for broad overview queries
+        if is_summary_query(question):
+            logger.info(
+                "Broad summary query detected — routing to Section-Structured Document Summary path"
+            )
+            ordered_chunks = self._retriever.get_ordered_document_chunks()
+            response = self._generator.generate_summary(question, ordered_chunks)
+            elapsed = time.perf_counter() - start
+            logger.info(
+                f"Summary query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
+            )
+            return response
+
         hyde_doc = ""
+
         expanded_queries = []
         search_query = question
 

@@ -112,7 +112,9 @@ class PromptsConfig:
     system_prompt: str = _prompts["system_prompt"]
     retrieval_prompt: str = _prompts["retrieval_prompt"]
     answer_prompt: str = _prompts["answer_prompt"]
+    summarize_prompt: str = _prompts.get("summarize_prompt", _prompts["answer_prompt"])
     rerank_instruction: str = _prompts["rerank_instruction"]
+
     fallback_response: str = _prompts["fallback_response"]
     thresholds: dict[str, Any] = _prompts["thresholds"]
     diagram_system_prompt: str = _prompts.get(

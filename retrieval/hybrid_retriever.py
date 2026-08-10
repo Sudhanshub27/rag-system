@@ -112,6 +112,31 @@ class HybridRetriever:
         )
         return final
 
+    def get_ordered_document_chunks(self) -> list[RetrievedChunk]:
+        """
+        Fetch ALL chunks from the vector store ordered sequentially by page number
+        and chunk_index. Used for whole-document summary and overview queries.
+        """
+        raw_chunks = self.vector_store.get_all_chunks()
+        if not raw_chunks:
+            logger.warning("No document chunks stored for summary retrieval")
+            return []
+
+        # Sort chunks sequentially by page number and chunk_index within metadata
+        sorted_chunks = sorted(
+            raw_chunks,
+            key=lambda c: (c.page, c.metadata.get("chunk_index", 0)),
+        )
+
+        retrieved: list[RetrievedChunk] = []
+        for rank, chunk in enumerate(sorted_chunks, start=1):
+            retrieved.append(RetrievedChunk(chunk=chunk, score=1.0, rank=rank))
+
+        logger.info(
+            f"Retrieved {len(retrieved)} ordered document chunk(s) across all pages for summary mode"
+        )
+        return retrieved
+
     # ── Fusion ────────────────────────────────────────────────────────────────
 
     def _reciprocal_rank_fusion(

@@ -138,6 +138,72 @@ class AnswerGenerator:
             relevance_score=relevance,
         )
 
+    def generate_summary(
+        self,
+        query: str,
+        retrieved_chunks: list[RetrievedChunk],
+    ) -> RAGResponse:
+        """
+        Generate a section-structured document summary from ordered document chunks.
+
+        Args:
+            query:            Summary request query (e.g. "explain the document").
+            retrieved_chunks: All document chunks sorted by page and position.
+
+        Returns:
+            RAGResponse with section-structured summary and page citations.
+        """
+        logger.info(f"Generating summary for query: '{query[:80]}'")
+        if not retrieved_chunks:
+            logger.warning(
+                "No chunks available for summary generation — returning fallback"
+            )
+            return RAGResponse(
+                answer=prompts_config.fallback_response,
+                citations=[],
+                retrieved_chunks=[],
+                query=query,
+                is_fallback=True,
+            )
+
+        # Build sequential context string with page markers
+        context_parts = []
+        for rc in retrieved_chunks:
+            c = rc.chunk
+            pg = c.page
+            c_idx = c.metadata.get("chunk_index", 0)
+            context_parts.append(f"--- [Page {pg} | Chunk {c_idx}] ---\n{c.text}")
+        context = "\n\n".join(context_parts)
+
+        summarize_template = getattr(
+            prompts_config,
+            "summarize_prompt",
+            prompts_config.answer_prompt,
+        )
+
+        prompt = summarize_template.format(
+            context=context,
+            question=query,
+        )
+
+        raw_answer = self._call_llm(prompt)
+        cleaned_answer = self._clean_reasoning(raw_answer)
+
+        is_fallback = prompts_config.fallback_response.lower() in cleaned_answer.lower()
+        citations = format_citations(retrieved_chunks)
+
+        logger.info(f"Summary generated ({len(cleaned_answer)} chars)")
+
+        return RAGResponse(
+            answer=cleaned_answer,
+            citations=citations,
+            retrieved_chunks=retrieved_chunks,
+            query=query,
+            is_fallback=is_fallback,
+            faithfulness_score=1.0 if not is_fallback else 0.0,
+            relevance_score=1.0 if not is_fallback else 0.0,
+        )
+
     def generate_hyde_doc(self, query: str) -> str:
         """
         Generate a hypothetical document passage for HyDE (Hypothetical Document Embeddings) retrieval.

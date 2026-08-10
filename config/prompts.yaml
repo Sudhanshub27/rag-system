@@ -33,7 +33,6 @@ retrieval_prompt: |
 answer_prompt: |
   You are given a user question and a set of numbered context chunks retrieved from documents.
   Answer the question using ONLY the information present in the context chunks.
-  Cite sources using [N] notation after each claim, where N is the chunk number.
 
   If you cannot answer from the context, respond exactly with:
   "Insufficient information to answer based on the provided documents."
@@ -47,12 +46,42 @@ answer_prompt: |
 
   ---
   Instructions:
-  1. Answer the question factually and concisely.
-  2. Cite every claim with [N] where N matches the chunk number.
-  3. Do NOT output your thought process, chain-of-thought, or internal reasoning.
-  4. Output ONLY the final answer text followed by citations.
+  1. Answer the question factually, clearly, and concisely.
+  2. Use section headers (## or ###) and bullet points when the answer covers multiple topics or sections.
+  3. Keep paragraphs short (maximum 3-4 sentences per paragraph).
+  4. Place citation markers [N] inline, IMMEDIATELY after the specific claim or sentence they support (e.g., "The system uses ChromaDB [1] for dense vector retrieval [2]."). Do NOT bunch citations at the end of paragraphs or responses.
+  5. Do NOT output your thought process, chain-of-thought, or internal reasoning.
+  6. Output ONLY the direct final answer text.
 
   Answer:
+
+# ---------------------
+# Summarization prompt
+# ---------------------
+summarize_prompt: |
+  You are given the complete text of document(s) ordered sequentially by page and position.
+  Your task is to generate a comprehensive, section-structured summary that faithfully reflects the document's own internal organization.
+
+  ---
+  Document Content:
+  {context}
+
+  ---
+  User Request: {question}
+
+  ---
+  Instructions:
+  1. Walk through the document in sequential order.
+  2. Use the document's actual internal headings and section titles (e.g. "5.2 Importance of Procedures", "5.3 Procedural Justice") as the output structure.
+  3. Under each section heading, write a concise 2-4 sentence summary of the key findings, rules, or arguments presented in that section.
+  4. Use bullet points for sub-points or key lists where helpful. Keep paragraphs under 3-4 sentences.
+  5. Attach a distinct, inline citation for each section pointing to the page(s) or chunk numbers it appears on (e.g. "[Procedural Justice, p.5]" or "[Chunk 1-3]").
+  6. Do NOT summarize page-by-page. Follow section boundaries regardless of page splits.
+  7. If the document is extremely long with 15+ sections, group minor subsections under main section headers to keep the summary readable and structured.
+  8. Output ONLY the final structured summary.
+
+  Summary:
+
 
 # ---------------------
 # Reranking prompt (used as instruction for cross-encoder)
