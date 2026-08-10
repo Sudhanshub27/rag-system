@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import ChatPanel from './components/ChatPanel';
+import ReadingPane from './components/ReadingPane';
 import SourceInspector from './components/SourceInspector';
 
 const API_BASE = 'http://localhost:8000/api';
@@ -16,6 +16,14 @@ export default function App() {
   const [fileProgress, setFileProgress] = useState({});
   const [error, setError] = useState(null);
   const [followups, setFollowups] = useState([]);
+
+  // RAG Pipeline Settings & Features State (From Screenshot)
+  const [settings, setSettings] = useState({
+    splitView: true,
+    debugScores: false,
+    useHyde: false,
+    useMultiQuery: false,
+  });
 
   // Fetch Documents & Stats
   const refreshData = async () => {
@@ -91,7 +99,7 @@ export default function App() {
     }
   };
 
-  // SSE Answer Streaming Query
+  // SSE Answer Streaming Query with HyDE & Multi-Query Options
   const handleSendMessage = async (question) => {
     setError(null);
     setFollowups([]);
@@ -104,7 +112,11 @@ export default function App() {
       const response = await fetch(`${API_BASE}/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({
+          question,
+          use_hyde: settings.useHyde,
+          use_multi_query: settings.useMultiQuery,
+        }),
         credentials: 'include',
       });
 
@@ -152,6 +164,8 @@ export default function App() {
         role: 'assistant',
         content: streamedText,
         citations: finalData?.retrieved_chunks || [],
+        faithfulness: finalData?.faithfulness_score,
+        relevance: finalData?.relevance_score,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -178,6 +192,13 @@ export default function App() {
         setFollowups(data.followups || []);
       }
     } catch (e) {}
+  };
+
+  const handleSelectCheckpoint = (msgIndex) => {
+    const el = document.getElementById(`checkpoint-${msgIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleDeleteDoc = async (filename) => {
@@ -208,17 +229,21 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 font-sans antialiased">
+    <div className="flex h-screen w-screen overflow-hidden bg-parchment-100 font-sans antialiased">
       <Sidebar
         tenantId={tenantId}
         documents={documents}
         stats={stats}
+        messages={messages}
         onUpload={handleUpload}
         fileProgress={fileProgress}
         onDeleteDoc={handleDeleteDoc}
         onDeleteAllData={handleDeleteAllData}
+        onSelectCheckpoint={handleSelectCheckpoint}
+        settings={settings}
+        onUpdateSettings={setSettings}
       />
-      <ChatPanel
+      <ReadingPane
         messages={messages}
         onSendMessage={handleSendMessage}
         isStreaming={isStreaming}
@@ -227,11 +252,16 @@ export default function App() {
         error={error}
         followups={followups}
         onSelectFollowup={handleSendMessage}
+        onSelectCheckpoint={handleSelectCheckpoint}
+        debugScores={settings.debugScores}
       />
-      <SourceInspector
-        selectedCitation={selectedCitation}
-        onClose={() => setSelectedCitation(null)}
-      />
+      {settings.splitView && (
+        <SourceInspector
+          selectedCitation={selectedCitation}
+          onClose={() => setSelectedCitation(null)}
+          debugScores={settings.debugScores}
+        />
+      )}
     </div>
   );
 }

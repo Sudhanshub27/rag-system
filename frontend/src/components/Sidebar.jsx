@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Upload, Trash2, Shield, FileText, Database, Info, AlertTriangle } from 'lucide-react';
+import { Upload, Trash2, Shield, FileText, BookOpen, AlertTriangle, History, MessageSquare, Sliders } from 'lucide-react';
 import UploadProgress from './UploadProgress';
 
 export default function Sidebar({
   tenantId,
   documents,
   stats,
+  messages,
   onUpload,
   fileProgress,
   onDeleteDoc,
   onDeleteAllData,
+  onSelectCheckpoint,
+  settings,
+  onUpdateSettings,
 }) {
   const [dragActive, setDragActive] = useState(false);
 
@@ -35,43 +39,113 @@ export default function Sidebar({
     }
   };
 
+  const handleCheckboxChange = (key) => {
+    onUpdateSettings({
+      ...settings,
+      [key]: !settings[key],
+    });
+  };
+
+  // Filter user questions for Recent Questions list
+  const recentQuestions = messages
+    .map((m, idx) => ({ ...m, originalIndex: idx }))
+    .filter((m) => m.role === 'user');
+
   return (
-    <aside className="w-80 bg-zinc-950 border-r border-zinc-800/80 flex flex-col h-full text-zinc-300 select-none">
-      {/* App Header & Tenant Info */}
-      <div className="p-4 border-b border-zinc-800/80 space-y-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">
-            R
+    <aside className="w-80 bg-parchment-200 border-r border-warmborder flex flex-col h-full text-charcoal-900 select-none font-sans">
+      {/* App Header with Custom Favicon */}
+      <div className="p-5 border-b border-warmborder space-y-3">
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/fav-icon.png"
+            alt="Ask My Documents Logo"
+            className="w-8 h-8 rounded-md object-contain bg-parchment-50 p-0.5 border border-warmborder shadow-sm"
+          />
+          <div>
+            <h1 className="font-serif font-bold text-charcoal-900 text-base tracking-tight leading-tight">
+              Ask My Documents
+            </h1>
+            <p className="text-[11px] text-charcoal-500 font-sans">Grounded Document QA</p>
           </div>
-          <span className="font-semibold text-zinc-100 tracking-tight text-base">Ask My Documents</span>
         </div>
-        <div className="text-xs bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-zinc-400 truncate">
-          Tenant: <span className="text-indigo-400">{tenantId || 'Loading...'}</span>
+
+        <div className="text-[11px] bg-parchment-50 border border-warmborder rounded-md px-2.5 py-1.5 font-mono text-charcoal-700 truncate">
+          Tenant: <span className="text-terracotta-600 font-semibold">{tenantId ? tenantId.slice(0, 8) + '...' : 'Initializing...'}</span>
         </div>
       </div>
 
-      {/* Main Scrollable Sidebar Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
-        {/* Lock / Privacy Note */}
-        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-indigo-950/30 border border-indigo-900/40 text-xs text-indigo-300">
-          <Shield className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
+        {/* Privacy Note */}
+        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-terracotta-100/60 border border-terracotta-600/20 text-charcoal-700 text-xs">
+          <Shield className="w-4 h-4 text-terracotta-600 shrink-0 mt-0.5" />
           <span>
-            No login needed. Your documents are stored under an anonymous ID private to this browser.
+            No login required. Your documents are stored under an anonymous ID private to this browser session.
           </span>
+        </div>
+
+        {/* Settings & Features */}
+        <div className="space-y-2.5 p-3 bg-parchment-50 border border-warmborder rounded-lg shadow-sm">
+          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center gap-1">
+            <Sliders className="w-3.5 h-3.5 text-terracotta-600" /> Settings & Features
+          </div>
+          <div className="space-y-2 text-xs text-charcoal-900 font-sans">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-terracotta-600 transition-colors">
+              <input
+                type="checkbox"
+                checked={settings.splitView}
+                onChange={() => handleCheckboxChange('splitView')}
+                className="w-3.5 h-3.5 accent-terracotta-600 rounded cursor-pointer"
+              />
+              <span>Split View Inspector</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-terracotta-600 transition-colors">
+              <input
+                type="checkbox"
+                checked={settings.debugScores}
+                onChange={() => handleCheckboxChange('debugScores')}
+                className="w-3.5 h-3.5 accent-terracotta-600 rounded cursor-pointer"
+              />
+              <span>Debug Retrieval Scores</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-terracotta-600 transition-colors">
+              <input
+                type="checkbox"
+                checked={settings.useHyde}
+                onChange={() => handleCheckboxChange('useHyde')}
+                className="w-3.5 h-3.5 accent-terracotta-600 rounded cursor-pointer"
+              />
+              <span>HyDE Retrieval</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer hover:text-terracotta-600 transition-colors">
+              <input
+                type="checkbox"
+                checked={settings.useMultiQuery}
+                onChange={() => handleCheckboxChange('useMultiQuery')}
+                className="w-3.5 h-3.5 accent-terracotta-600 rounded cursor-pointer"
+              />
+              <span>Multi-Query Expansion</span>
+            </label>
+          </div>
         </div>
 
         {/* Drag & Drop File Upload */}
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Upload Documents</div>
+          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans">
+            Upload Documents
+          </div>
           <div
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
+            className={`border border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${
               dragActive
-                ? 'border-indigo-500 bg-indigo-950/20'
-                : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/40'
+                ? 'border-terracotta-600 bg-parchment-50'
+                : 'border-warmborder hover:border-terracotta-600/60 bg-parchment-50/70'
             }`}
           >
             <input
@@ -82,57 +156,90 @@ export default function Sidebar({
               className="hidden"
               id="sidebar-file-input"
             />
-            <label htmlFor="sidebar-file-input" className="cursor-pointer flex flex-col items-center gap-2">
-              <Upload className="w-5 h-5 text-zinc-400" />
-              <div className="text-xs text-zinc-300">
-                <span className="font-medium text-indigo-400">Click to upload</span> or drag and drop
+            <label htmlFor="sidebar-file-input" className="cursor-pointer flex flex-col items-center gap-1.5">
+              <Upload className="w-5 h-5 text-terracotta-600" />
+              <div className="text-xs text-charcoal-700">
+                <span className="font-semibold text-terracotta-600">Click to upload</span> or drag PDFs/TXT
               </div>
-              <div className="text-[10px] text-zinc-500">PDF, TXT, MD up to 25MB</div>
+              <div className="text-[10px] text-charcoal-500">PDF, TXT, Markdown supported</div>
             </label>
           </div>
           <UploadProgress fileProgress={fileProgress} />
         </div>
 
-        {/* Knowledge Base Stats */}
+        {/* Recent Questions Session History */}
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Knowledge Base Stats</div>
+          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <History className="w-3.5 h-3.5 text-terracotta-600" /> Recent Questions
+            </span>
+            <span className="text-[10px] text-charcoal-500 font-mono">({recentQuestions.length})</span>
+          </div>
+
+          {recentQuestions.length === 0 ? (
+            <div className="text-xs text-charcoal-500 italic p-3 bg-parchment-50/50 rounded-lg border border-warmborder/60">
+              No questions asked yet in this session.
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+              {recentQuestions.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSelectCheckpoint(q.originalIndex)}
+                  className="w-full text-left p-2 rounded-md bg-parchment-50 hover:bg-parchment-300/40 border border-warmborder text-xs text-charcoal-900 truncate font-serif italic flex items-center gap-2 transition-colors shadow-sm"
+                >
+                  <MessageSquare className="w-3 h-3 text-terracotta-600 shrink-0 not-italic" />
+                  <span className="truncate">{q.content}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Knowledge Stats */}
+        <div className="space-y-2">
+          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans">
+            Corpus Stats
+          </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg">
-              <div className="text-lg font-semibold text-zinc-100">{stats.total_chunks || 0}</div>
-              <div className="text-[11px] text-zinc-400 flex items-center gap-1">
-                <Database className="w-3 h-3" /> Total Chunks
+            <div className="bg-parchment-50 border border-warmborder p-2.5 rounded-lg shadow-sm">
+              <div className="text-xl font-serif font-bold text-charcoal-900">{stats.total_chunks || 0}</div>
+              <div className="text-[11px] text-charcoal-500 flex items-center gap-1 font-sans">
+                <BookOpen className="w-3 h-3 text-terracotta-600" /> Total Chunks
               </div>
             </div>
-            <div className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg">
-              <div className="text-lg font-semibold text-zinc-100">{documents.length || 0}</div>
-              <div className="text-[11px] text-zinc-400 flex items-center gap-1">
-                <FileText className="w-3 h-3" /> Documents
+            <div className="bg-parchment-50 border border-warmborder p-2.5 rounded-lg shadow-sm">
+              <div className="text-xl font-serif font-bold text-charcoal-900">{documents.length || 0}</div>
+              <div className="text-[11px] text-charcoal-500 flex items-center gap-1 font-sans">
+                <FileText className="w-3 h-3 text-terracotta-600" /> Documents
               </div>
             </div>
           </div>
         </div>
 
-        {/* Ingested Documents List */}
+        {/* Index List */}
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Your Documents</div>
+          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans">
+            Your Documents
+          </div>
           {documents.length === 0 ? (
-            <div className="text-xs text-zinc-500 italic p-2 bg-zinc-900/50 rounded border border-zinc-800/50">
+            <div className="text-xs text-charcoal-500 italic p-3 bg-parchment-50/50 rounded-lg border border-warmborder/60">
               No files uploaded yet.
             </div>
           ) : (
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
               {documents.map((doc) => (
                 <div
                   key={doc.filename}
-                  className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 text-xs"
+                  className="flex items-center justify-between p-2.5 rounded-lg bg-parchment-50 border border-warmborder text-xs shadow-sm"
                 >
-                  <div className="truncate max-w-[170px]">
-                    <div className="font-medium text-zinc-200 truncate">{doc.filename}</div>
-                    <div className="text-[10px] text-zinc-500">{doc.chunk_count} chunks</div>
+                  <div className="truncate max-w-[160px]">
+                    <div className="font-serif font-medium text-charcoal-900 truncate">{doc.filename}</div>
+                    <div className="text-[10px] text-charcoal-500">{doc.chunk_count} chunks</div>
                   </div>
                   <button
                     onClick={() => onDeleteDoc(doc.filename)}
-                    className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
+                    className="p-1 text-charcoal-500 hover:text-rust-600 transition-colors"
                     title="Delete document"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -144,13 +251,13 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Footer / Purge Data Button */}
-      <div className="p-4 border-t border-zinc-800/80 space-y-2">
+      {/* Footer Purge Button */}
+      <div className="p-4 border-t border-warmborder">
         <button
           onClick={onDeleteAllData}
-          className="w-full py-2 px-3 rounded-lg bg-red-950/40 hover:bg-red-950/80 border border-red-900/50 text-red-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+          className="w-full py-2 px-3 rounded-lg bg-rust-100/80 hover:bg-rust-100 border border-rust-600/30 text-rust-600 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
         >
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+          <AlertTriangle className="w-3.5 h-3.5" />
           Delete all my data
         </button>
       </div>

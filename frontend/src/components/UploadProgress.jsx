@@ -4,40 +4,32 @@ import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 export default function UploadProgress({ fileProgress }) {
   if (!fileProgress || Object.keys(fileProgress).length === 0) return null;
 
-  const stages = [
-    { id: 'chunking', label: 'Chunking' },
-    { id: 'embedding', label: 'Embedding' },
-    { id: 'indexing', label: 'Indexing' },
-    { id: 'complete', label: 'Complete' },
-  ];
-
   return (
-    <div className="space-y-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg text-xs">
-      <div className="font-semibold text-zinc-300">Ingestion Progress</div>
+    <div className="space-y-3 p-3 bg-parchment-50 border border-warmborder rounded-lg text-xs font-sans shadow-sm">
+      <div className="font-semibold text-charcoal-700">Ingestion Status</div>
       {Object.entries(fileProgress).map(([filename, prog]) => {
         const isError = prog.stage === 'error';
         const isComplete = prog.stage === 'complete';
 
         return (
-          <div key={filename} className="space-y-1.5 border-b border-zinc-800/80 pb-2 last:border-0 last:pb-0">
-            <div className="flex items-center justify-between text-zinc-400">
-              <span className="font-medium truncate max-w-[160px] text-zinc-200">{filename}</span>
+          <div key={filename} className="space-y-1.5 border-b border-warmborder pb-2 last:border-0 last:pb-0">
+            <div className="flex items-center justify-between text-charcoal-700">
+              <span className="font-serif font-medium truncate max-w-[150px] text-charcoal-900">{filename}</span>
               <span className="text-[10px] uppercase font-mono">
                 {isError ? (
-                  <span className="text-red-400 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Error</span>
+                  <span className="text-rust-600 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Failed</span>
                 ) : isComplete ? (
-                  <span className="text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Done ({prog.chunks_added} chunks)</span>
+                  <span className="text-sage-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Ready ({prog.chunks_added} chunks)</span>
                 ) : (
-                  <span className="text-indigo-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> {prog.stage}</span>
+                  <span className="text-terracotta-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> {prog.stage}</span>
                 )}
               </span>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+            <div className="w-full bg-parchment-200 rounded-full h-1.5 overflow-hidden">
               <div
                 className={`h-1.5 transition-all duration-300 ${
-                  isError ? 'bg-red-500' : isComplete ? 'bg-emerald-500' : 'bg-indigo-500'
+                  isError ? 'bg-rust-600' : isComplete ? 'bg-sage-600' : 'bg-terracotta-600'
                 }`}
                 style={{ width: `${prog.progress || 0}%` }}
               />

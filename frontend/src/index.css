@@ -2,9 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+:root {
+  color-scheme: light;
+}
+
+html, body {
   margin: 0;
-  background-color: #09090b;
-  color: #f4f4f5;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  padding: 0;
+  background-color: #EDE6D8 !important;
+  color: #2A2420 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar for Parchment Theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EDE6D8;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DCD2BE;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8A7F6E;
 }
