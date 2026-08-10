@@ -54,12 +54,13 @@ class DocumentIngestionPipeline:
             self._loaders[ext] = self._LOADER_REGISTRY[ext]()
         return self._loaders[ext]
 
-    def ingest(self, source: str) -> list[Document]:
+    def ingest(self, source: str, tenant_id: str | None = None) -> list[Document]:
         """
         Ingest a single file.
 
         Args:
             source: Path to the document.
+            tenant_id: Unique identifier for the tenant.
 
         Returns:
             List of Document objects.
@@ -68,6 +69,8 @@ class DocumentIngestionPipeline:
             ValueError: For unsupported file types.
             RuntimeError: For loading failures.
         """
+        import datetime
+
         path = Path(source)
         ext = path.suffix.lower()
 
@@ -84,6 +87,14 @@ class DocumentIngestionPipeline:
 
         loader = self._get_loader(ext)
         docs = loader.load(source)
+
+        upload_ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        for doc in docs:
+            if tenant_id:
+                doc.metadata["tenant_id"] = tenant_id
+            doc.metadata["filename"] = path.name
+            doc.metadata["upload_timestamp"] = upload_ts
+
         logger.info(f"Ingested {len(docs)} document(s) from {path.name}")
         return docs
 
@@ -91,6 +102,7 @@ class DocumentIngestionPipeline:
         self,
         directory: str,
         recursive: bool = True,
+        tenant_id: str | None = None,
     ) -> list[Document]:
         """
         Ingest all supported files in a directory.
@@ -98,6 +110,7 @@ class DocumentIngestionPipeline:
         Args:
             directory: Path to the directory.
             recursive: If True, search subdirectories as well.
+            tenant_id: Unique identifier for the tenant.
 
         Returns:
             Flat list of all Document objects.
@@ -125,7 +138,7 @@ class DocumentIngestionPipeline:
 
         for file in files:
             try:
-                docs = self.ingest(str(file))
+                docs = self.ingest(str(file), tenant_id=tenant_id)
                 all_docs.extend(docs)
             except Exception as e:
                 logger.error(f"Failed to ingest {file.name}: {e}")
@@ -139,3 +152,4 @@ class DocumentIngestionPipeline:
             f"{len(all_docs)} total documents loaded, {len(failed)} failed."
         )
         return all_docs
+

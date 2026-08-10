@@ -46,20 +46,38 @@ class SemanticChunker:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def chunk(self, documents: list[Document]) -> list[Chunk]:
+    # ── Public API ────────────────────────────────────────────────────────────
+
+    def chunk(
+        self,
+        documents: list[Document],
+        tenant_id: str | None = None,
+    ) -> list[Chunk]:
         """
         Chunk a list of Documents.
 
         Args:
             documents: Documents from the ingestion pipeline.
+            tenant_id: Unique identifier for the tenant.
 
         Returns:
-            Flat list of Chunk objects with metadata.
+            Flat list of Chunk objects with metadata and unique IDs.
         """
         all_chunks: list[Chunk] = []
+        seen_ids: set[str] = set()
+
         for doc in documents:
-            chunks = self._chunk_document(doc)
-            all_chunks.extend(chunks)
+            chunks = self._chunk_document(doc, tenant_id=tenant_id)
+            for c in chunks:
+                c_id = c.chunk_id
+                if c_id in seen_ids:
+                    suffix = 1
+                    while f"{c_id}_{suffix}" in seen_ids:
+                        suffix += 1
+                    c.chunk_id = f"{c_id}_{suffix}"
+                seen_ids.add(c.chunk_id)
+                all_chunks.append(c)
+
             logger.debug(
                 f"Chunked '{doc.source}' page {doc.metadata.get('page', '?')} "
                 f"→ {len(chunks)} chunk(s)"
@@ -69,7 +87,11 @@ class SemanticChunker:
 
     # ── Internal ──────────────────────────────────────────────────────────────
 
-    def _chunk_document(self, doc: Document) -> list[Chunk]:
+    def _chunk_document(
+        self,
+        doc: Document,
+        tenant_id: str | None = None,
+    ) -> list[Chunk]:
         """Split a single Document into Chunks."""
         sentences = split_into_sentences(doc.content)
         if not sentences:
@@ -86,7 +108,9 @@ class SemanticChunker:
             # If a single sentence exceeds the chunk size, hard-split it
             if sentence_tokens > self.chunk_size:
                 if current_sentences:
-                    chunks.append(self._make_chunk(doc, current_sentences, chunk_index))
+                    chunks.append(
+                        self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+                    )
                     chunk_index += 1
                     current_sentences, current_tokens = self._carry_overlap(
                         current_sentences
@@ -97,7 +121,7 @@ class SemanticChunker:
                     current_tokens += token_count_approx(sub)
                     if current_tokens >= self.chunk_size:
                         chunks.append(
-                            self._make_chunk(doc, current_sentences, chunk_index)
+                            self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
                         )
                         chunk_index += 1
                         current_sentences, current_tokens = self._carry_overlap(
@@ -107,7 +131,9 @@ class SemanticChunker:
 
             # Normal sentence fits — check if we need to flush
             if current_tokens + sentence_tokens > self.chunk_size and current_sentences:
-                chunks.append(self._make_chunk(doc, current_sentences, chunk_index))
+                chunks.append(
+                    self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+                )
                 chunk_index += 1
                 current_sentences, current_tokens = self._carry_overlap(
                     current_sentences
@@ -118,25 +144,55 @@ class SemanticChunker:
 
         # Flush remainder
         if current_sentences:
-            chunks.append(self._make_chunk(doc, current_sentences, chunk_index))
+            chunks.append(
+                self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+            )
 
         # Filter out tiny chunks
         return [c for c in chunks if token_count_approx(c.text) >= self.min_chunk_size]
 
-    def _make_chunk(self, doc: Document, sentences: list[str], index: int) -> Chunk:
+    def _make_chunk(
+        self,
+        doc: Document,
+        sentences: list[str],
+        index: int,
+        tenant_id: str | None = None,
+    ) -> Chunk:
         """Assemble sentences into a Chunk with metadata."""
+        import datetime
+        from pathlib import Path
+
         text = " ".join(sentences).strip()
+        eff_tenant = (
+            tenant_id
+            or doc.metadata.get("tenant_id")
+            or "default_tenant"
+        )
+        filename = doc.metadata.get("filename") or Path(doc.source).name
+        upload_ts = (
+            doc.metadata.get("upload_timestamp")
+            or datetime.datetime.now(datetime.timezone.utc).isoformat()
+        )
+        page = doc.metadata.get("page", 1)
+
+        metadata = {
+            **doc.metadata,
+            "chunk_index": index,
+            "token_count": token_count_approx(text),
+            "tenant_id": eff_tenant,
+            "filename": filename,
+            "upload_timestamp": upload_ts,
+        }
+
         return Chunk(
             text=text,
             source=doc.source,
-            chunk_id=generate_chunk_id(doc.source, index, text),
-            page=doc.metadata.get("page", 1),
-            metadata={
-                **doc.metadata,
-                "chunk_index": index,
-                "token_count": token_count_approx(text),
-            },
+            chunk_id=generate_chunk_id(doc.source, index, text, page=page),
+            page=page,
+            metadata=metadata,
         )
+
+
 
     def _carry_overlap(self, sentences: list[str]):
         """

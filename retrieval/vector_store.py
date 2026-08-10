@@ -45,20 +45,23 @@ class ChromaVectorStore:
         self,
         persist_directory: str = vector_store_config.persist_directory,
         collection_name: str | None = None,
+        tenant_id: str | None = None,
         user_id: str | None = None,
     ):
-        if user_id:
-            collection_name = sanitize_collection_name(user_id)
+        eff_tenant = tenant_id or user_id
+        if eff_tenant:
+            collection_name = sanitize_collection_name(eff_tenant)
         elif not collection_name:
             collection_name = vector_store_config.collection_name
 
         self.persist_directory = persist_directory
         self.collection_name = collection_name
-        self.user_id = user_id
+        self.tenant_id = eff_tenant or "default_tenant"
+        self.user_id = self.tenant_id
 
         logger.info(
             f"Initializing ChromaDB at '{persist_directory}' "
-            f"(collection: '{collection_name}', user_id: '{user_id}')"
+            f"(collection: '{collection_name}', tenant_id: '{self.tenant_id}')"
         )
 
         self._client = chromadb.PersistentClient(
@@ -73,6 +76,7 @@ class ChromaVectorStore:
         logger.info(
             f"ChromaDB ready for '{self.collection_name}' — {self._collection.count()} existing chunk(s)"
         )
+
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -95,11 +99,25 @@ class ChromaVectorStore:
                 f"Mismatch: {len(chunks)} chunks vs {len(embeddings)} embeddings"
             )
 
-        # Filter out already-stored chunks
+        # Filter out already-stored chunks (idempotent) and handle intra-batch duplicates
         existing_ids = set(self._collection.get(include=[])["ids"])
-        new_chunks = [
-            (c, e) for c, e in zip(chunks, embeddings) if c.chunk_id not in existing_ids
-        ]
+        batch_seen_ids = set()
+        new_chunks = []
+
+        for c, e in zip(chunks, embeddings):
+            if c.chunk_id in existing_ids:
+                continue
+
+            cid = c.chunk_id
+            if cid in batch_seen_ids:
+                suffix = 1
+                while f"{cid}_{suffix}" in batch_seen_ids or f"{cid}_{suffix}" in existing_ids:
+                    suffix += 1
+                c.chunk_id = f"{cid}_{suffix}"
+                cid = c.chunk_id
+            batch_seen_ids.add(cid)
+            new_chunks.append((c, e))
+
 
         if not new_chunks:
             logger.info("All chunks already in vector store — nothing to add")
@@ -109,6 +127,7 @@ class ChromaVectorStore:
         docs = [c.text for c, _ in new_chunks]
         vecs = [e for _, e in new_chunks]
         metas = [self._build_metadata(c) for c, _ in new_chunks]
+
 
         # ChromaDB upsert in batches of 500 (Chroma's internal limit)
         batch_size = 500
@@ -243,6 +262,23 @@ class ChromaVectorStore:
                 name=self.collection_name,
                 metadata={"hnsw:space": "cosine"},
             )
+
+    def delete_tenant_collection(self) -> None:
+        """Drop the entire ChromaDB collection for this tenant."""
+        logger.warning(
+            f"Dropping collection '{self.collection_name}' for tenant '{self.tenant_id}'"
+        )
+        try:
+            self._client.delete_collection(self.collection_name)
+        except Exception as e:
+            logger.error(
+                f"Failed to drop collection '{self.collection_name}': {e}"
+            )
+        self._collection = self._client.get_or_create_collection(
+            name=self.collection_name,
+            metadata={"hnsw:space": "cosine"},
+        )
+
 
     # ── Internal ──────────────────────────────────────────────────────────────
 

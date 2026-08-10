@@ -50,14 +50,16 @@ def print_response(response) -> None:
 def main():
     parser = argparse.ArgumentParser(
         prog="rag",
-        description="Production RAG System CLI",
+        description="Production Multi-Tenant RAG System CLI",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument(
+        "--tenant-id",
+        "-t",
         "--user-id",
         "-u",
         default="cli_user",
-        help="User ID for per-user data isolation (default: cli_user)",
+        help="Tenant ID for multi-tenant data isolation (default: cli_user)",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -80,31 +82,44 @@ def main():
     query_parser.add_argument("--json", action="store_true", help="Output raw JSON")
 
     # stats
-    subparsers.add_parser("stats", help="Show knowledge base statistics")
+    subparsers.add_parser(
+        "stats",
+        aliases=["list-docs"],
+        help="Show knowledge base statistics and list tenant documents",
+    )
 
-    # delete
+    # delete single document
     delete_parser = subparsers.add_parser(
         "delete", help="Delete a document by source name"
     )
     delete_parser.add_argument("source", help="Filename as stored (e.g. report.pdf)")
 
+    # delete all tenant data
+    subparsers.add_parser(
+        "delete-all",
+        aliases=["delete-my-data", "delete-tenant-data"],
+        help="Delete all data for this tenant (drops ChromaDB collection entirely)",
+    )
+
     args = parser.parse_args()
 
     setup_logger(debug=args.debug)
-    pipeline = RAGPipeline(user_id=args.user_id, debug=args.debug)
+    tenant_id = args.tenant_id
+    pipeline = RAGPipeline(tenant_id=tenant_id, debug=args.debug)
 
     if args.command == "ingest":
         n = pipeline.ingest(args.source)
-        print(f"✅ Ingested {n} chunks from {args.source}")
+        print(f"✅ Ingested {n} chunks from {args.source} (Tenant: {tenant_id})")
 
     elif args.command == "ingest-dir":
         n = pipeline.ingest_directory(args.directory, recursive=not args.no_recursive)
-        print(f"✅ Ingested {n} total chunks from {args.directory}")
+        print(f"✅ Ingested {n} total chunks from {args.directory} (Tenant: {tenant_id})")
 
     elif args.command == "query":
         response = pipeline.query(args.question)
         if args.json:
             out = {
+                "tenant_id": tenant_id,
                 "answer": response.answer,
                 "citations": response.citations,
                 "is_fallback": response.is_fallback,
@@ -122,17 +137,35 @@ def main():
         else:
             print_response(response)
 
-    elif args.command == "stats":
+    elif args.command in ("stats", "list-docs"):
         stats = pipeline.get_stats()
-        print("\nKnowledge Base Statistics")
-        print("-" * 30)
+        chunks = pipeline.get_all_chunks()
+        doc_map = {}
+        for c in chunks:
+            src = c.source
+            doc_map[src] = doc_map.get(src, 0) + 1
+
+        print(f"\nKnowledge Base Statistics (Tenant: {tenant_id})")
+        print("-" * 50)
         for k, v in stats.items():
             print(f"  {k}: {v}")
 
+        print(f"\nDocuments ({len(doc_map)} total):")
+        if not doc_map:
+            print("  (No documents ingested for this tenant)")
+        else:
+            for src, count in sorted(doc_map.items()):
+                print(f"  - {src} ({count} chunk(s))")
+
     elif args.command == "delete":
         deleted = pipeline.delete_document(args.source)
-        print(f"✅ Deleted {deleted} chunks for '{args.source}'")
+        print(f"✅ Deleted {deleted} chunks for '{args.source}' (Tenant: {tenant_id})")
+
+    elif args.command in ("delete-all", "delete-my-data", "delete-tenant-data"):
+        pipeline.delete_all_tenant_data()
+        print(f"🗑️ Successfully deleted all data for tenant '{tenant_id}' (collection dropped)")
 
 
 if __name__ == "__main__":
     main()
+

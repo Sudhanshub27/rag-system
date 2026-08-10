@@ -8,15 +8,19 @@ import unicodedata
 from pathlib import Path
 
 
-def generate_chunk_id(source: str, chunk_index: int, text: str) -> str:
+def generate_chunk_id(
+    source: str, chunk_index: int, text: str, page: int = 1
+) -> str:
     """
     Deterministically generate a unique ID for a chunk.
 
-    Uses a hash of (source + index + first 64 chars of text) so IDs are
-    stable across runs and won't collide even for duplicate source names.
+    Uses a hash of (source + page + chunk_index + text hash) so IDs are
+    unique across pages and document sections.
     """
-    raw = f"{source}::{chunk_index}::{text[:64]}"
+    text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()[:8]
+    raw = f"{source}::p{page}::idx{chunk_index}::{text_hash}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
 
 
 def normalize_text(text: str) -> str:
@@ -123,21 +127,24 @@ def get_pdf_page_image(pdf_path: str, page_num: int, dpi: int = 150) -> bytes | 
     return None
 
 
-def sanitize_collection_name(user_id: str) -> str:
+def sanitize_collection_name(tenant_id: str) -> str:
     """
-    Sanitize a user identifier into a valid ChromaDB collection name.
+    Sanitize a tenant/user identifier into a valid ChromaDB collection name.
 
     ChromaDB collection name rules:
     - Must be 3-63 characters long.
     - Matches ^[a-zA-Z0-9_-]+$
+    - Lowercase alphanumeric with underscores or hyphens.
     - Starts and ends with an alphanumeric character.
     """
-    clean = re.sub(r"[^a-zA-Z0-9_-]", "_", str(user_id)).strip("_")
+    raw = str(tenant_id).lower()
+    clean = re.sub(r"[^a-zA-Z0-9_-]", "_", raw).strip("_")
     if not clean:
-        clean = "default_user"
-    collection_name = f"user_{clean}"
+        clean = "default"
+    collection_name = f"tenant_{clean}"
     if len(collection_name) > 63:
         collection_name = collection_name[:63].rstrip("_")
     while len(collection_name) < 3:
-        collection_name += "_usr"
+        collection_name += "_tnt"
     return collection_name
+

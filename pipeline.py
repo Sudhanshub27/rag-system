@@ -38,31 +38,39 @@ class RAGPipeline:
     High-level facade orchestrating document ingestion, retrieval, reranking,
     answer generation, and diagram creation.
 
-    Per-User Isolation:
-    Each instance is bound to a specific `user_id`, using a separate ChromaDB collection
-    (`user_{user_id}`) and an isolated per-user BM25 index.
+    Per-Tenant Data Isolation:
+    Each instance is bound to a specific `tenant_id`, using a separate ChromaDB collection
+    (`tenant_{tenant_id}`) and an isolated per-tenant BM25 index.
 
     Args:
-        user_id: Unique identifier for the user (default: "default_user").
-        debug:   If True, increase logging verbosity.
+        tenant_id: Unique identifier for the tenant (default: "default_tenant").
+        user_id:   Backwards-compatibility alias for tenant_id.
+        debug:     If True, increase logging verbosity.
     """
 
-    def __init__(self, user_id: str = "default_user", debug: bool = False):
+    def __init__(
+        self,
+        tenant_id: str | None = None,
+        user_id: str | None = None,
+        debug: bool = False,
+    ):
+        eff_tenant = tenant_id or user_id or "default_tenant"
         if debug:
             import logging
 
             logging.getLogger("rag").setLevel(logging.DEBUG)
 
-        self.user_id = user_id
-        logger.info(f"Initializing RAG Pipeline for user_id='{user_id}'…")
+        self.tenant_id = eff_tenant
+        self.user_id = eff_tenant
+        logger.info(f"Initializing RAG Pipeline for tenant_id='{eff_tenant}'…")
 
-        # Component initialization with per-user data isolation
+        # Component initialization with per-tenant data isolation
         self._ingestion = DocumentIngestionPipeline()
         self._chunker = SemanticChunker()
         self._embedder = EmbeddingEngine()
-        self._vector_store = ChromaVectorStore(user_id=user_id)
+        self._vector_store = ChromaVectorStore(tenant_id=eff_tenant)
 
-        # Per-user BM25 index (built strictly from user's chunks)
+        # Per-tenant BM25 index (built strictly from tenant's chunks)
         self._bm25 = BM25Retriever()
         self._all_chunks: list[Chunk] = self._vector_store.get_all_chunks()
         if self._all_chunks:
@@ -87,7 +95,7 @@ class RAGPipeline:
         self._diagram_generator = DiagramGenerator()
 
         logger.info(
-            f"RAG Pipeline ready for user_id='{user_id}' — {len(self._all_chunks)} chunk(s) indexed"
+            f"RAG Pipeline ready for tenant_id='{eff_tenant}' — {len(self._all_chunks)} chunk(s) indexed"
         )
 
     # ── Ingestion ─────────────────────────────────────────────────────────────
@@ -103,16 +111,16 @@ class RAGPipeline:
             Number of new chunks added.
         """
         start = time.perf_counter()
-        logger.info(f"=== Ingesting: {source} ===")
+        logger.info(f"=== Ingesting for tenant '{self.tenant_id}': {source} ===")
 
         # Load
-        documents = self._ingestion.ingest(source)
+        documents = self._ingestion.ingest(source, tenant_id=self.tenant_id)
         if not documents:
             logger.warning(f"No content extracted from {source}")
             return 0
 
         # Chunk
-        chunks = self._chunker.chunk(documents)
+        chunks = self._chunker.chunk(documents, tenant_id=self.tenant_id)
         if not chunks:
             logger.warning(f"No chunks produced from {source}")
             return 0
@@ -142,12 +150,14 @@ class RAGPipeline:
         Returns:
             Total number of new chunks added.
         """
-        logger.info(f"=== Ingesting directory: {directory} ===")
-        documents = self._ingestion.ingest_directory(directory, recursive)
+        logger.info(f"=== Ingesting directory for tenant '{self.tenant_id}': {directory} ===")
+        documents = self._ingestion.ingest_directory(
+            directory, recursive=recursive, tenant_id=self.tenant_id
+        )
         if not documents:
             return 0
 
-        chunks = self._chunker.chunk(documents)
+        chunks = self._chunker.chunk(documents, tenant_id=self.tenant_id)
         if not chunks:
             return 0
 
@@ -159,6 +169,7 @@ class RAGPipeline:
 
         logger.info(f"Directory ingestion complete: {len(chunks)} total chunks")
         return len(chunks)
+
 
     # ── Query ─────────────────────────────────────────────────────────────────
 
@@ -304,9 +315,19 @@ class RAGPipeline:
         """Return all chunks stored in the vector database."""
         return self._vector_store.get_all_chunks()
 
+    def delete_all_tenant_data(self) -> None:
+        """Drop the entire ChromaDB collection for this tenant and clear local caches."""
+        self._vector_store.delete_tenant_collection()
+        self._all_chunks = []
+        self._bm25.build([])
+        logger.warning(
+            f"All data for tenant '{self.tenant_id}' has been permanently deleted."
+        )
+
     def reset_database(self) -> None:
         """Reset the vector database and clear all stored knowledge."""
         self._vector_store.reset()
         self._all_chunks = []
         self._bm25.build([])
         logger.warning("Vector store and BM25 index completely reset.")
+

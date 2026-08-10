@@ -48,11 +48,24 @@ class AnswerGenerator:
         max_tokens: int = generation_config.max_tokens,
         temperature: float = generation_config.temperature,
     ):
+        if any(
+            bad in model
+            for bad in (
+                "google/gemini-2.0-flash-lite",
+                "google/gemini-2.0-pro",
+                "deepseek/deepseek-r1",
+                "qwen/qwen-2.5",
+                "meta-llama/llama-3.1",
+            )
+        ):
+            model = "deepseek/deepseek-chat"
+
         self.provider = provider
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
         self._client = self._init_client()
+
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -487,17 +500,31 @@ class AnswerGenerator:
 
     def _call_openai(self, system: str, user: str) -> str:
         """Call OpenAI Chat Completions API with OpenRouter model fallback resilience."""
+        if any(
+            bad in self.model
+            for bad in (
+                "deepseek/deepseek-r1:free",
+                "google/gemini-2.0-flash-lite",
+                "google/gemini-2.0-pro",
+                "qwen/qwen-2.5",
+                "meta-llama/llama-3.1",
+            )
+        ):
+            self.model = "deepseek/deepseek-chat"
+
         models_to_try = [self.model]
         if self.provider == "openrouter":
             fallback_models = [
-                "google/gemini-2.0-flash-lite-preview-02-05:free",
-                "qwen/qwen-2.5-coder-32b-instruct:free",
-                "meta-llama/llama-3.1-8b-instruct:free",
-                "deepseek/deepseek-r1:free",
+                "deepseek/deepseek-chat",
+                "openrouter/free",
+                "google/gemma-4-31b-it:free",
+                "openai/gpt-oss-20b:free",
             ]
             for fb in fallback_models:
                 if fb not in models_to_try:
                     models_to_try.append(fb)
+
+
 
         last_error = None
         for m in models_to_try:

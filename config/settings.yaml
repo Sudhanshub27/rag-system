@@ -47,7 +47,8 @@ retrieval:
 # ---------------------
 generation:
   provider: "openrouter"        # "anthropic" | "openai" | "deepseek" | "openrouter"
-  model: "google/gemini-2.0-flash-lite-preview-02-05:free"  # Active, reliable free model slug on OpenRouter
+  model: "deepseek/deepseek-chat"  # Active, fast DeepSeek model on OpenRouter
+
   max_tokens: 2048
   temperature: 0.1         # Low temp for factual grounding
   timeout_seconds: 60

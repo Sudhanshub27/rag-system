@@ -19,7 +19,6 @@ import streamlit as st
 from streamlit_mermaid import st_mermaid
 
 from pipeline import RAGPipeline
-from utils.auth import authenticate_user, register_user
 from utils.helpers import get_pdf_page_image
 from utils.logger import setup_logger
 from utils.rate_limiter import RateLimitExceededError
@@ -252,23 +251,81 @@ def render_mermaid(mermaid_code: str, height: int = 450):
     st_mermaid(mermaid_code, height=f"{height}px")
 
 
-# ── Pipeline Factory Cached Per User ID ──────────────────────────────────────
+# ── Cookie & Anonymous Tenant ID Management ────────────────────────────────────
+import datetime
+import uuid
+import extra_streamlit_components as stx
+
+
+def is_valid_uuid(val: str | None) -> bool:
+    """Validate if string is a valid UUID4 format."""
+    if not val or not isinstance(val, str):
+        return False
+    try:
+        val_uuid = uuid.UUID(val)
+        return val_uuid.version == 4
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
+cookie_manager = stx.CookieManager(key="tenant_id_cookie_mgr")
+
+
+def get_or_create_tenant_id() -> str:
+    """
+    Retrieve or create a persistent anonymous tenant_id.
+
+    Security Rules:
+    - Never reads tenant_id from URL query params or user input.
+    - Strictly checks browser cookies or session_state.
+    - Rejects invalid UUID formats and regenerates a fresh UUID4.
+    """
+    # Check session state first
+    if "tenant_id" in st.session_state and is_valid_uuid(st.session_state.tenant_id):
+        return st.session_state.tenant_id
+
+    # Read cookie
+    raw_cookie = cookie_manager.get("tenant_id")
+    if is_valid_uuid(raw_cookie):
+        st.session_state.tenant_id = raw_cookie
+        return raw_cookie
+
+    # Generate fresh UUID4 if cookie missing or invalid
+    new_tenant_id = str(uuid.uuid4())
+    st.session_state.tenant_id = new_tenant_id
+
+    # Persist cookie for 2 years (730 days)
+    expires_at = datetime.datetime.now() + datetime.timedelta(days=730)
+    try:
+        cookie_manager.set(
+            "tenant_id", new_tenant_id, expires_at=expires_at, key="set_tenant_cookie"
+        )
+    except Exception:
+        pass
+
+    return new_tenant_id
+
+
+current_tenant_id = get_or_create_tenant_id()
+current_user_id = current_tenant_id  # alias for layout references
+
+
 @st.cache_resource(show_spinner="Initializing pipeline...")
-def get_user_pipeline(user_id: str) -> RAGPipeline:
+def get_tenant_pipeline(tenant_id: str) -> RAGPipeline:
     setup_logger()
     import importlib
-
+    import config
+    import generation.answer_generator
     import pipeline as pipeline_module
 
+    importlib.reload(config)
+    importlib.reload(generation.answer_generator)
     importlib.reload(pipeline_module)
-    return pipeline_module.RAGPipeline(user_id=user_id)
+    return pipeline_module.RAGPipeline(tenant_id=tenant_id)
+
 
 
 # ── Session State Initialization ──────────────────────────────────────────────
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "user_id" not in st.session_state:
-    st.session_state.user_id = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "selected_chunk" not in st.session_state:
@@ -276,69 +333,9 @@ if "selected_chunk" not in st.session_state:
 if "selected_citation" not in st.session_state:
     st.session_state.selected_citation = None
 
-# ── Authentication Gate ───────────────────────────────────────────────────────
-if not st.session_state.authenticated:
-    st.markdown(
-        '<div class="main-title">Document Intelligence</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="sub-title">Multi-tenant document workspace. Sign in to access your knowledge base.</div>',
-        unsafe_allow_html=True,
-    )
-
-    col_auth_left, col_auth_mid, col_auth_right = st.columns([1, 2, 1])
-    with col_auth_mid:
-        auth_tab_login, auth_tab_register = st.tabs(["Sign In", "Register Account"])
-
-        with auth_tab_login:
-            st.markdown("#### Sign In")
-            login_username = (
-                st.text_input("Username", key="login_username_input").strip().lower()
-            )
-            login_password = st.text_input(
-                "Password", type="password", key="login_password_input"
-            )
-
-            if st.button("Sign In", use_container_width=True, key="login_submit_btn"):
-                user = authenticate_user(login_username, login_password)
-                if user:
-                    st.session_state.authenticated = True
-                    st.session_state.user_id = user["username"]
-                    st.session_state.user_email = user.get("email", "")
-                    st.success(f"Signed in as {user['username']}")
-                    st.rerun()
-                else:
-                    st.error("Invalid username or password.")
-
-            st.caption(
-                "Default Accounts: `demo_user` / `demo123`, `alice` / `alice123`, `bob` / `bob123`"
-            )
-
-        with auth_tab_register:
-            st.markdown("#### Create Account")
-            reg_username = (
-                st.text_input("Username", key="reg_username_input").strip().lower()
-            )
-            reg_email = st.text_input("Email", key="reg_email_input").strip()
-            reg_password = st.text_input(
-                "Password", type="password", key="reg_password_input"
-            )
-
-            if st.button("Register", use_container_width=True, key="reg_submit_btn"):
-                if not reg_username or not reg_password:
-                    st.warning("Username and password are required.")
-                elif register_user(reg_username, reg_email, reg_password):
-                    st.success("Account registered. You can now sign in.")
-                else:
-                    st.error("Username already exists or is invalid.")
-
-    st.stop()
-
-# ── User Logged In: Fetch User-Scoped Pipeline ────────────────────────────────
-current_user_id = st.session_state.user_id
+# ── Fetch Tenant-Scoped Pipeline ───────────────────────────────────────────────
 try:
-    pipeline = get_user_pipeline(current_user_id)
+    pipeline = get_tenant_pipeline(current_tenant_id)
     _pipeline_error = None
 except TypeError:
     st.cache_resource.clear()
@@ -347,7 +344,7 @@ except TypeError:
     import pipeline as pipeline_module
 
     importlib.reload(pipeline_module)
-    pipeline = pipeline_module.RAGPipeline(user_id=current_user_id)
+    pipeline = pipeline_module.RAGPipeline(tenant_id=current_tenant_id)
     _pipeline_error = None
 except Exception as _e:
     pipeline = None
@@ -355,7 +352,7 @@ except Exception as _e:
 
 
 def get_ingested_docs_summary(p):
-    """Group chunks by document source for current user."""
+    """Group chunks by document source for current tenant."""
     if not p:
         return []
     chunks = p.get_all_chunks()
@@ -371,14 +368,22 @@ def get_ingested_docs_summary(p):
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown(
-        f"<div style='font-size: 0.85rem; font-weight: 600; color: #E6E8EB;'>User: {current_user_id}</div>",
+        f"<div style='font-size: 0.85rem; font-weight: 600; color: #E6E8EB;'>Tenant ID:<br><code style='color:#6366F1;'>{current_tenant_id}</code></div>",
         unsafe_allow_html=True,
     )
-    if st.button("Sign Out", use_container_width=True, key="logout_btn"):
-        st.session_state.clear()
-        st.rerun()
+    
+    st.markdown("<div style='margin-top: 0.5rem;'></div>", unsafe_allow_html=True)
+    if st.button("Delete all my data", use_container_width=True, key="delete_all_my_data_btn"):
+        if pipeline:
+            pipeline.delete_all_tenant_data()
+            st.session_state.messages = []
+            st.session_state.selected_chunk = None
+            st.session_state.selected_citation = None
+            st.success("All your data has been permanently deleted.")
+            st.rerun()
 
     st.divider()
+
 
     st.markdown(
         "<div style='font-size: 0.8rem; font-weight: 600; color: #8B92A3; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;'>Document Upload</div>",
