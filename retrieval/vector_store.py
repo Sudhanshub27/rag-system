@@ -77,7 +77,6 @@ class ChromaVectorStore:
             f"ChromaDB ready for '{self.collection_name}' — {self._collection.count()} existing chunk(s)"
         )
 
-
     # ── Public API ────────────────────────────────────────────────────────────
 
     def add_chunks(
@@ -111,13 +110,15 @@ class ChromaVectorStore:
             cid = c.chunk_id
             if cid in batch_seen_ids:
                 suffix = 1
-                while f"{cid}_{suffix}" in batch_seen_ids or f"{cid}_{suffix}" in existing_ids:
+                while (
+                    f"{cid}_{suffix}" in batch_seen_ids
+                    or f"{cid}_{suffix}" in existing_ids
+                ):
                     suffix += 1
                 c.chunk_id = f"{cid}_{suffix}"
                 cid = c.chunk_id
             batch_seen_ids.add(cid)
             new_chunks.append((c, e))
-
 
         if not new_chunks:
             logger.info("All chunks already in vector store — nothing to add")
@@ -127,7 +128,6 @@ class ChromaVectorStore:
         docs = [c.text for c, _ in new_chunks]
         vecs = [e for _, e in new_chunks]
         metas = [self._build_metadata(c) for c, _ in new_chunks]
-
 
         # ChromaDB upsert in batches of 500 (Chroma's internal limit)
         batch_size = 500
@@ -271,14 +271,11 @@ class ChromaVectorStore:
         try:
             self._client.delete_collection(self.collection_name)
         except Exception as e:
-            logger.error(
-                f"Failed to drop collection '{self.collection_name}': {e}"
-            )
+            logger.error(f"Failed to drop collection '{self.collection_name}': {e}")
         self._collection = self._client.get_or_create_collection(
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},
         )
-
 
     # ── Internal ──────────────────────────────────────────────────────────────
 

@@ -109,7 +109,9 @@ class SemanticChunker:
             if sentence_tokens > self.chunk_size:
                 if current_sentences:
                     chunks.append(
-                        self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+                        self._make_chunk(
+                            doc, current_sentences, chunk_index, tenant_id=tenant_id
+                        )
                     )
                     chunk_index += 1
                     current_sentences, current_tokens = self._carry_overlap(
@@ -121,7 +123,9 @@ class SemanticChunker:
                     current_tokens += token_count_approx(sub)
                     if current_tokens >= self.chunk_size:
                         chunks.append(
-                            self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+                            self._make_chunk(
+                                doc, current_sentences, chunk_index, tenant_id=tenant_id
+                            )
                         )
                         chunk_index += 1
                         current_sentences, current_tokens = self._carry_overlap(
@@ -132,7 +136,9 @@ class SemanticChunker:
             # Normal sentence fits — check if we need to flush
             if current_tokens + sentence_tokens > self.chunk_size and current_sentences:
                 chunks.append(
-                    self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+                    self._make_chunk(
+                        doc, current_sentences, chunk_index, tenant_id=tenant_id
+                    )
                 )
                 chunk_index += 1
                 current_sentences, current_tokens = self._carry_overlap(
@@ -145,7 +151,9 @@ class SemanticChunker:
         # Flush remainder
         if current_sentences:
             chunks.append(
-                self._make_chunk(doc, current_sentences, chunk_index, tenant_id=tenant_id)
+                self._make_chunk(
+                    doc, current_sentences, chunk_index, tenant_id=tenant_id
+                )
             )
 
         # Filter out tiny chunks
@@ -163,11 +171,7 @@ class SemanticChunker:
         from pathlib import Path
 
         text = " ".join(sentences).strip()
-        eff_tenant = (
-            tenant_id
-            or doc.metadata.get("tenant_id")
-            or "default_tenant"
-        )
+        eff_tenant = tenant_id or doc.metadata.get("tenant_id") or "default_tenant"
         filename = doc.metadata.get("filename") or Path(doc.source).name
         upload_ts = (
             doc.metadata.get("upload_timestamp")
@@ -191,8 +195,6 @@ class SemanticChunker:
             page=page,
             metadata=metadata,
         )
-
-
 
     def _carry_overlap(self, sentences: list[str]):
         """

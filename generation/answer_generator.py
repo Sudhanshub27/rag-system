@@ -66,7 +66,6 @@ class AnswerGenerator:
         self.temperature = temperature
         self._client = self._init_client()
 
-
     # ── Public API ────────────────────────────────────────────────────────────
 
     def generate(
@@ -523,8 +522,6 @@ class AnswerGenerator:
             for fb in fallback_models:
                 if fb not in models_to_try:
                     models_to_try.append(fb)
-
-
 
         last_error = None
         for m in models_to_try:

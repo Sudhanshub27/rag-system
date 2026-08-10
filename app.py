@@ -6,11 +6,15 @@ Run with:
     streamlit run app.py
 """
 
+import datetime
 import logging
 import sys
 import time
+import uuid
 import warnings
 from pathlib import Path
+
+import extra_streamlit_components as stx
 
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).parent))
@@ -252,9 +256,6 @@ def render_mermaid(mermaid_code: str, height: int = 450):
 
 
 # ── Cookie & Anonymous Tenant ID Management ────────────────────────────────────
-import datetime
-import uuid
-import extra_streamlit_components as stx
 
 
 def is_valid_uuid(val: str | None) -> bool:
@@ -314,6 +315,7 @@ current_user_id = current_tenant_id  # alias for layout references
 def get_tenant_pipeline(tenant_id: str) -> RAGPipeline:
     setup_logger()
     import importlib
+
     import config
     import generation.answer_generator
     import pipeline as pipeline_module
@@ -322,7 +324,6 @@ def get_tenant_pipeline(tenant_id: str) -> RAGPipeline:
     importlib.reload(generation.answer_generator)
     importlib.reload(pipeline_module)
     return pipeline_module.RAGPipeline(tenant_id=tenant_id)
-
 
 
 # ── Session State Initialization ──────────────────────────────────────────────
@@ -371,19 +372,25 @@ with st.sidebar:
         f"<div style='font-size: 0.85rem; font-weight: 600; color: #E6E8EB;'>Tenant ID:<br><code style='color:#6366F1;'>{current_tenant_id}</code></div>",
         unsafe_allow_html=True,
     )
-    
+
     st.markdown("<div style='margin-top: 0.5rem;'></div>", unsafe_allow_html=True)
-    if st.button("Delete all my data", use_container_width=True, key="delete_all_my_data_btn"):
+    st.sidebar.warning("⚠️ Deleting your data is permanent and cannot be undone.")
+    if st.button(
+        "Delete all my data", use_container_width=True, key="delete_all_my_data_btn"
+    ):
         if pipeline:
             pipeline.delete_all_tenant_data()
             st.session_state.messages = []
             st.session_state.selected_chunk = None
             st.session_state.selected_citation = None
-            st.success("All your data has been permanently deleted.")
+            st.sidebar.success("All your data has been permanently deleted.")
             st.rerun()
 
     st.divider()
 
+    st.caption(
+        "🔒 No login needed. Your documents are private to this browser and stored under an anonymous ID — no one else can see them."
+    )
 
     st.markdown(
         "<div style='font-size: 0.8rem; font-weight: 600; color: #8B92A3; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;'>Document Upload</div>",
@@ -438,6 +445,17 @@ with st.sidebar:
             st.markdown(
                 f'<div class="stat-card"><div class="stat-value">{len(doc_summary)}</div><div class="stat-label">Documents</div></div>',
                 unsafe_allow_html=True,
+            )
+
+        # Your Data Expander
+        with st.sidebar.expander("🔒 Your Data Privacy & Stats", expanded=False):
+            st.markdown(f"**Tenant ID:** `{current_tenant_id[:13]}...`")
+            st.markdown(f"- **Documents Ingested:** `{len(doc_summary)}`")
+            st.markdown(
+                f"- **Total Chunks Stored:** `{stats.get('total_chunks_in_vector_store', 0)}`"
+            )
+            st.caption(
+                "🔒 All content is isolated to this browser and not linked to any personal identity or email address."
             )
 
         # Ingested Files List with Delete Action
@@ -529,6 +547,14 @@ with col_chat:
         f'<div class="sub-title">Workspace: <b>{current_user_id}</b></div>',
         unsafe_allow_html=True,
     )
+
+    if "welcome_banner_shown" not in st.session_state:
+        st.session_state.welcome_banner_shown = True
+        st.info(
+            "👋 **Welcome! No login or signup required.**\n\n"
+            "Your workspace is private and automatically secured with an anonymous ID. "
+            "Your uploaded documents persist across visits and can be permanently deleted anytime using the sidebar button."
+        )
 
     # ── Architecture Comparison Expander ─────────────────────────────────────
     with st.expander(

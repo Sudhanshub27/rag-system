@@ -12,6 +12,7 @@ A **production-grade Retrieval-Augmented Generation (RAG)** system equipped with
 
 ## 📋 Table of Contents
 - [✨ Key Features](#-key-features)
+- [🔓 No Login Required](#-no-login-required)
 - [⚖️ Why RAG vs. Pasting Docs into ChatGPT/Claude](#-why-rag-vs-pasting-documents-into-chatgptclaude)
 - [🧩 Retrieval Modes & ML Features](#-retrieval-modes--ml-features)
 - [💬 Interaction & Application Modes](#-interaction--application-modes)
@@ -37,6 +38,20 @@ A **production-grade Retrieval-Augmented Generation (RAG)** system equipped with
 | 🖥️ **7. User Interfaces** | Interactive Streamlit Web UI & CLI | Web UI (`app.py`) with visual PDF page snapshots & Mermaid diagrams; full terminal CLI (`cli.py`). |
 
 ---
+
+## 🔓 No Login Required
+
+This application is engineered with a **zero-friction, privacy-preserving multi-tenant architecture**. You can upload and query documents instantly without creating an account:
+
+- **Zero Authentication Overhead**: No email, username, password, or signup process required.
+- **Anonymous Cookie-Based Persistence**: On your first visit, the system generates a private, random UUID4 identifier (`tenant_id`) stored in a long-lived browser cookie (2-year expiry). Returning to the app on the same browser automatically restores your private workspace.
+- **Strict Data Isolation**: Documents, vector embeddings, and BM25 index data are partitioned into isolated per-tenant vector store collections (`tenant_<tenant_id>`). No user can query or view another user's content.
+- **Persistent Workspace**: Your uploaded documents and index data remain saved across browser sessions (days, weeks, or months) as long as the cookie isn't cleared.
+- **User-Controlled Data Purging**: Permanently delete all your uploaded documents and vector index collections at any time using the **"Delete all my data"** button in the sidebar.
+- **Privacy Limitation & Note**: Because there is no account system linking personal identity to your data, **clearing browser cookies or switching devices/browsers assigns a new anonymous tenant ID**. Access to documents uploaded under the old browser cookie cannot be recovered once the cookie is lost.
+
+---
+
 
 ## ⚖️ Why RAG vs. Pasting Documents into ChatGPT/Claude
 

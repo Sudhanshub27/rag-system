@@ -8,9 +8,7 @@ import unicodedata
 from pathlib import Path
 
 
-def generate_chunk_id(
-    source: str, chunk_index: int, text: str, page: int = 1
-) -> str:
+def generate_chunk_id(source: str, chunk_index: int, text: str, page: int = 1) -> str:
     """
     Deterministically generate a unique ID for a chunk.
 
@@ -20,7 +18,6 @@ def generate_chunk_id(
     text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()[:8]
     raw = f"{source}::p{page}::idx{chunk_index}::{text_hash}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
-
 
 
 def normalize_text(text: str) -> str:
@@ -147,4 +144,3 @@ def sanitize_collection_name(tenant_id: str) -> str:
     while len(collection_name) < 3:
         collection_name += "_tnt"
     return collection_name
-

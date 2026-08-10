@@ -113,7 +113,9 @@ def main():
 
     elif args.command == "ingest-dir":
         n = pipeline.ingest_directory(args.directory, recursive=not args.no_recursive)
-        print(f"✅ Ingested {n} total chunks from {args.directory} (Tenant: {tenant_id})")
+        print(
+            f"✅ Ingested {n} total chunks from {args.directory} (Tenant: {tenant_id})"
+        )
 
     elif args.command == "query":
         response = pipeline.query(args.question)
@@ -163,9 +165,10 @@ def main():
 
     elif args.command in ("delete-all", "delete-my-data", "delete-tenant-data"):
         pipeline.delete_all_tenant_data()
-        print(f"🗑️ Successfully deleted all data for tenant '{tenant_id}' (collection dropped)")
+        print(
+            f"🗑️ Successfully deleted all data for tenant '{tenant_id}' (collection dropped)"
+        )
 
 
 if __name__ == "__main__":
     main()
-

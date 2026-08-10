@@ -152,4 +152,3 @@ class DocumentIngestionPipeline:
             f"{len(all_docs)} total documents loaded, {len(failed)} failed."
         )
         return all_docs
-

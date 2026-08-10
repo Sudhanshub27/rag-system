@@ -150,7 +150,9 @@ class RAGPipeline:
         Returns:
             Total number of new chunks added.
         """
-        logger.info(f"=== Ingesting directory for tenant '{self.tenant_id}': {directory} ===")
+        logger.info(
+            f"=== Ingesting directory for tenant '{self.tenant_id}': {directory} ==="
+        )
         documents = self._ingestion.ingest_directory(
             directory, recursive=recursive, tenant_id=self.tenant_id
         )
@@ -169,7 +171,6 @@ class RAGPipeline:
 
         logger.info(f"Directory ingestion complete: {len(chunks)} total chunks")
         return len(chunks)
-
 
     # ── Query ─────────────────────────────────────────────────────────────────
 
@@ -330,4 +331,3 @@ class RAGPipeline:
         self._all_chunks = []
         self._bm25.build([])
         logger.warning("Vector store and BM25 index completely reset.")
-
