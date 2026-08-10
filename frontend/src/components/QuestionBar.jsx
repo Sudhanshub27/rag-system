@@ -12,7 +12,7 @@ export default function QuestionBar({ onSendMessage, isStreaming, followups, onS
   };
 
   return (
-    <div className="border-t border-warmborder bg-parchment-100/90 backdrop-blur-sm p-4 space-y-2">
+    <div className="bg-parchment-100 p-4 space-y-2">
       {/* Understated Follow-up Links */}
       {followups && followups.length > 0 && !isStreaming && (
         <div className="flex flex-wrap items-center gap-2 max-w-3xl mx-auto px-1 text-xs">

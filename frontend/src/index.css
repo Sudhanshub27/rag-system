@@ -6,9 +6,12 @@
   color-scheme: light;
 }
 
-html, body {
+html, body, #root {
   margin: 0;
   padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   background-color: #EDE6D8 !important;
   color: #2A2420 !important;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;

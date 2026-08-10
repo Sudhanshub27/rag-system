@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ReadingPane from './components/ReadingPane';
 import SourceInspector from './components/SourceInspector';
 
+import HowItWorks from './pages/HowItWorks';
+import Privacy from './pages/Privacy';
+import RetrievalSettings from './pages/RetrievalSettings';
+import FAQ from './pages/FAQ';
+
 const API_BASE = 'http://localhost:8000/api';
 
-export default function App() {
+function MainWorkspace() {
   const [tenantId, setTenantId] = useState('');
   const [documents, setDocuments] = useState([]);
   const [stats, setStats] = useState({});
@@ -17,7 +24,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [followups, setFollowups] = useState([]);
 
-  // RAG Pipeline Settings & Features State (From Screenshot)
+  // RAG Pipeline Settings & Features State
   const [settings, setSettings] = useState({
     splitView: true,
     debugScores: false,
@@ -214,7 +221,6 @@ export default function App() {
   };
 
   const handleDeleteAllData = async () => {
-    if (!window.confirm('Are you sure you want to permanently delete all your uploaded documents?')) return;
     try {
       await fetch(`${API_BASE}/tenant/${tenantId}`, {
         method: 'DELETE',
@@ -229,7 +235,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-parchment-100 font-sans antialiased">
+    <div className="flex flex-1 min-h-0 overflow-hidden">
       <Sidebar
         tenantId={tenantId}
         documents={documents}
@@ -263,5 +269,24 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-parchment-100 font-sans antialiased">
+        <Navbar />
+        <main className="flex-1 min-h-0 overflow-hidden relative flex">
+          <Routes>
+            <Route path="/" element={<MainWorkspace />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/retrieval-settings" element={<RetrievalSettings />} />
+            <Route path="/faq" element={<FAQ />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Upload, Trash2, Shield, FileText, BookOpen, AlertTriangle, History, MessageSquare, Sliders } from 'lucide-react';
+import { Upload, Trash2, FileText, BookOpen, AlertTriangle, History, MessageSquare, Sliders, Database, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import UploadProgress from './UploadProgress';
+import ConfirmModal from './ConfirmModal';
 
 export default function Sidebar({
   tenantId,
@@ -16,6 +17,24 @@ export default function Sidebar({
   onUpdateSettings,
 }) {
   const [dragActive, setDragActive] = useState(false);
+  const [showFullTenantId, setShowFullTenantId] = useState(false);
+  const [copiedTenantId, setCopiedTenantId] = useState(false);
+
+  // State for Custom Parchment Confirmation Modal
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Delete',
+    onConfirm: () => {},
+  });
+
+  const handleCopyTenantId = () => {
+    if (!tenantId) return;
+    navigator.clipboard.writeText(tenantId);
+    setCopiedTenantId(true);
+    setTimeout(() => setCopiedTenantId(false), 2000);
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -46,47 +65,68 @@ export default function Sidebar({
     });
   };
 
+  const promptDeleteDocument = (filename) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Document',
+      message: `Are you sure you want to delete "${filename}"? It will be removed from your vector search index immediately.`,
+      confirmText: 'Delete Document',
+      onConfirm: () => onDeleteDoc(filename),
+    });
+  };
+
+  const promptDeleteAllData = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete All My Data',
+      message: 'Are you sure you want to permanently delete all uploaded documents and session history? This action cannot be undone.',
+      confirmText: 'Delete All Data',
+      onConfirm: () => onDeleteAllData(),
+    });
+  };
+
   // Filter user questions for Recent Questions list
   const recentQuestions = messages
     .map((m, idx) => ({ ...m, originalIndex: idx }))
     .filter((m) => m.role === 'user');
 
+  const maskedTenantId = tenantId ? `${tenantId.slice(0, 8)}-••••-••••-••••-••••••••••••` : 'Connecting...';
+
   return (
-    <aside className="w-80 bg-parchment-200 border-r border-warmborder flex flex-col h-full text-charcoal-900 select-none font-sans">
-      {/* App Header with Custom Favicon */}
-      <div className="p-5 border-b border-warmborder space-y-3">
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/fav-icon.png"
-            alt="Ask My Documents Logo"
-            className="w-8 h-8 rounded-md object-contain bg-parchment-50 p-0.5 border border-warmborder shadow-sm"
-          />
-          <div>
-            <h1 className="font-serif font-bold text-charcoal-900 text-base tracking-tight leading-tight">
-              Ask My Documents
-            </h1>
-            <p className="text-[11px] text-charcoal-500 font-sans">Grounded Document QA</p>
+    <aside className="w-80 shrink-0 bg-parchment-200 border-r border-warmborder flex flex-col h-full text-charcoal-900 select-none font-sans overflow-hidden">
+      {/* Full Tenant ID Section with Eye Toggle */}
+      <div className="p-3.5 border-b border-warmborder bg-parchment-200/90 shrink-0 space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] font-sans font-semibold text-charcoal-500 uppercase tracking-wider">
+          <span className="flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 text-terracotta-600" /> Tenant ID
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowFullTenantId(!showFullTenantId)}
+              className="p-1 hover:bg-parchment-50 rounded text-charcoal-500 hover:text-terracotta-600 transition-colors"
+              title={showFullTenantId ? 'Hide Tenant ID' : 'Show Full Tenant ID'}
+            >
+              {showFullTenantId ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={handleCopyTenantId}
+              className="p-1 hover:bg-parchment-50 rounded text-charcoal-500 hover:text-terracotta-600 transition-colors"
+              title="Copy Tenant ID"
+            >
+              {copiedTenantId ? <Check className="w-3.5 h-3.5 text-sage-600" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
-
-        <div className="text-[11px] bg-parchment-50 border border-warmborder rounded-md px-2.5 py-1.5 font-mono text-charcoal-700 truncate">
-          Tenant: <span className="text-terracotta-600 font-semibold">{tenantId ? tenantId.slice(0, 8) + '...' : 'Initializing...'}</span>
+        <div className="bg-parchment-50 border border-warmborder rounded-lg p-2.5 font-mono text-xs text-charcoal-900 font-semibold break-all select-text shadow-2xs">
+          {showFullTenantId ? (tenantId || 'Connecting...') : maskedTenantId}
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Scrollable Sidebar Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
-        {/* Privacy Note */}
-        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-terracotta-100/60 border border-terracotta-600/20 text-charcoal-700 text-xs">
-          <Shield className="w-4 h-4 text-terracotta-600 shrink-0 mt-0.5" />
-          <span>
-            No login required. Your documents are stored under an anonymous ID private to this browser session.
-          </span>
-        </div>
-
         {/* Settings & Features */}
-        <div className="space-y-2.5 p-3 bg-parchment-50 border border-warmborder rounded-lg shadow-sm">
-          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center gap-1">
+        <div className="space-y-2.5 p-3 bg-parchment-50 border border-warmborder rounded-lg shadow-2xs">
+          <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-terracotta-600" /> Settings & Features
           </div>
           <div className="space-y-2 text-xs text-charcoal-900 font-sans">
@@ -186,7 +226,7 @@ export default function Sidebar({
                 <button
                   key={i}
                   onClick={() => onSelectCheckpoint(q.originalIndex)}
-                  className="w-full text-left p-2 rounded-md bg-parchment-50 hover:bg-parchment-300/40 border border-warmborder text-xs text-charcoal-900 truncate font-serif italic flex items-center gap-2 transition-colors shadow-sm"
+                  className="w-full text-left p-2 rounded-md bg-parchment-50 hover:bg-parchment-300/40 border border-warmborder text-xs text-charcoal-900 truncate font-serif italic flex items-center gap-2 transition-colors shadow-2xs"
                 >
                   <MessageSquare className="w-3 h-3 text-terracotta-600 shrink-0 not-italic" />
                   <span className="truncate">{q.content}</span>
@@ -202,13 +242,13 @@ export default function Sidebar({
             Corpus Stats
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-parchment-50 border border-warmborder p-2.5 rounded-lg shadow-sm">
+            <div className="bg-parchment-50 border border-warmborder p-2.5 rounded-lg shadow-2xs">
               <div className="text-xl font-serif font-bold text-charcoal-900">{stats.total_chunks || 0}</div>
               <div className="text-[11px] text-charcoal-500 flex items-center gap-1 font-sans">
                 <BookOpen className="w-3 h-3 text-terracotta-600" /> Total Chunks
               </div>
             </div>
-            <div className="bg-parchment-50 border border-warmborder p-2.5 rounded-lg shadow-sm">
+            <div className="bg-parchment-50 border border-warmborder p-2.5 rounded-lg shadow-2xs">
               <div className="text-xl font-serif font-bold text-charcoal-900">{documents.length || 0}</div>
               <div className="text-[11px] text-charcoal-500 flex items-center gap-1 font-sans">
                 <FileText className="w-3 h-3 text-terracotta-600" /> Documents
@@ -231,14 +271,14 @@ export default function Sidebar({
               {documents.map((doc) => (
                 <div
                   key={doc.filename}
-                  className="flex items-center justify-between p-2.5 rounded-lg bg-parchment-50 border border-warmborder text-xs shadow-sm"
+                  className="flex items-center justify-between p-2.5 rounded-lg bg-parchment-50 border border-warmborder text-xs shadow-2xs"
                 >
                   <div className="truncate max-w-[160px]">
                     <div className="font-serif font-medium text-charcoal-900 truncate">{doc.filename}</div>
                     <div className="text-[10px] text-charcoal-500">{doc.chunk_count} chunks</div>
                   </div>
                   <button
-                    onClick={() => onDeleteDoc(doc.filename)}
+                    onClick={() => promptDeleteDocument(doc.filename)}
                     className="p-1 text-charcoal-500 hover:text-rust-600 transition-colors"
                     title="Delete document"
                   >
@@ -252,15 +292,25 @@ export default function Sidebar({
       </div>
 
       {/* Footer Purge Button */}
-      <div className="p-4 border-t border-warmborder">
+      <div className="p-4 border-t border-warmborder bg-parchment-200 shrink-0">
         <button
-          onClick={onDeleteAllData}
+          onClick={promptDeleteAllData}
           className="w-full py-2 px-3 rounded-lg bg-rust-100/80 hover:bg-rust-100 border border-rust-600/30 text-rust-600 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
         >
           <AlertTriangle className="w-3.5 h-3.5" />
           Delete all my data
         </button>
       </div>
+
+      {/* Reusable Parchment Styled Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </aside>
   );
 }
