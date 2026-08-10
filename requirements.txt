@@ -16,11 +16,16 @@ pypdf>=4.0.0      # Fallback PDF reader
 anthropic>=0.30.0
 openai>=1.35.0
 
-# Web UI
+# Web API & UI
+fastapi>=0.110.0
+uvicorn>=0.28.0
+sse-starlette>=2.0.0
+python-multipart>=0.0.9
 streamlit>=1.35.0
 streamlit-mermaid>=0.2.0
 streamlit-authenticator>=0.4.0
 bcrypt>=4.0.0
+
 
 # Evaluation
 ragas>=0.1.15
