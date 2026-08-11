@@ -16,6 +16,8 @@ from config import embedding_config
 from utils.logger import logger
 from utils.models import Chunk
 
+_shared_embedding_models: dict = {}
+
 
 class EmbeddingEngine:
     """
@@ -47,15 +49,24 @@ class EmbeddingEngine:
         else:
             self._cache = {}
 
-        logger.info(f"Loading embedding model: {model_name} on {device}")
-        try:
-            from sentence_transformers import SentenceTransformer
+        cache_key = f"{model_name}_{device}"
+        if cache_key not in _shared_embedding_models:
+            logger.info(f"Loading embedding model: {model_name} on {device}")
+            try:
+                from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(model_name, device=device)
-            logger.info("Embedding model loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load embedding model '{model_name}': {e}")
-            raise
+                model_inst = SentenceTransformer(model_name, device=device)
+                if not hasattr(model_inst, "_mock_name") and not hasattr(
+                    model_inst, "return_value"
+                ):
+                    _shared_embedding_models[cache_key] = model_inst
+                self._model = model_inst
+                logger.info("Embedding model loaded successfully")
+            except Exception as e:
+                logger.error(f"Failed to load embedding model '{model_name}': {e}")
+                raise
+        else:
+            self._model = _shared_embedding_models[cache_key]
 
     # ── Public API ────────────────────────────────────────────────────────────
 

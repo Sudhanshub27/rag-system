@@ -14,6 +14,8 @@ from config import retrieval_config
 from utils.logger import logger
 from utils.models import RetrievedChunk
 
+_shared_reranker_models: dict = {}
+
 
 class CrossEncoderReranker:
     """
@@ -31,21 +33,29 @@ class CrossEncoderReranker:
     ):
         self.model_name = model_name
         self.top_n = top_n
-        logger.info(f"Loading cross-encoder reranker: {model_name}")
 
-        try:
-            from sentence_transformers import CrossEncoder
+        if model_name not in _shared_reranker_models:
+            logger.info(f"Loading cross-encoder reranker: {model_name}")
+            try:
+                from sentence_transformers import CrossEncoder
 
-            self._model = CrossEncoder(model_name)
-            logger.info("Cross-encoder reranker loaded successfully")
-        except ImportError as e:
-            raise ImportError(
-                "sentence-transformers is required for reranking. "
-                "Run: pip install sentence-transformers"
-            ) from e
-        except Exception as e:
-            logger.error(f"Failed to load reranker '{model_name}': {e}")
-            raise
+                model_inst = CrossEncoder(model_name)
+                if not hasattr(model_inst, "_mock_name") and not hasattr(
+                    model_inst, "return_value"
+                ):
+                    _shared_reranker_models[model_name] = model_inst
+                self._model = model_inst
+                logger.info("Cross-encoder reranker loaded successfully")
+            except ImportError as e:
+                raise ImportError(
+                    "sentence-transformers is required for reranking. "
+                    "Run: pip install sentence-transformers"
+                ) from e
+            except Exception as e:
+                logger.error(f"Failed to load reranker '{model_name}': {e}")
+                raise
+        else:
+            self._model = _shared_reranker_models[model_name]
 
     def rerank(
         self,
