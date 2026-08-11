@@ -26,8 +26,8 @@ def get_tenant_id(request: Request, response: Response) -> str:
             value=tenant_id,
             max_age=COOKIE_MAX_AGE,
             httponly=True,
-            samesite="lax",
-            secure=False,  # Set to True in production HTTPS
+            samesite="none",
+            secure=True,
         )
     return tenant_id
 
