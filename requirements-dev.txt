@@ -1,3 +1,6 @@
-# Development & Linting
+# Development, Linting & Testing
 ruff>=0.3.0
 black>=24.0.0
+pytest>=8.0.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0

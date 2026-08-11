@@ -1,19 +1,23 @@
 import os
+
 import uvicorn
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from api.routes import documents, followup, query, tenant, upload
 
 # Restrict PyTorch and OpenMP memory overhead for 512MB RAM free instances
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
-import torch
-torch.set_num_threads(1)
+try:
+    import torch
 
-from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-from api.routes import documents, followup, query, tenant, upload
+    torch.set_num_threads(1)
+except ImportError:
+    pass
 
 app = FastAPI(
     title="Ask My Documents RAG API",
