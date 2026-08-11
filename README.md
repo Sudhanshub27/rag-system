@@ -29,7 +29,7 @@ A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** we
 |---|---|---|
 | 📂 **1. Ingestion & Docs** | Layout-Aware & Hyperlink Ingestion | Extracts per-page text & embedded hyperlinks via `PyMuPDF` (`fitz`), with `pypdf` fallback. |
 | ✂️ **2. Chunking Strategy** | Semantic Pitch-Deck Chunker | Sentence-boundary aware regex splitting (`250` token size, `15` token min limit to preserve bullet points). |
-| 🗄️ **3. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `SentenceTransformers all-MiniLM-L6-v2` (384-dim) with isolated per-tenant vector collections (`tenant_<id>`). |
+| 🗄️ **3. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `ONNX Runtime / SentenceTransformers all-MiniLM-L6-v2` (384-dim) with isolated per-tenant vector collections (`tenant_<id>`). |
 | 🔍 **4. Retrieval Engine** | Hybrid BM25 + Vector Search + Reranker | Combines `rank_bm25` and ChromaDB via RRF fusion + `ms-marco-MiniLM-L-6-v2` cross-encoder reranking. |
 | 🛡️ **5. Privacy Layer** | Built-in Local PII Redaction & Zero-Training APIs | Scrubber sanitizes names, emails, IPs locally by default; routes requests exclusively to contractually zero-training APIs like Groq. |
 | 🤖 **6. LLM Inference** | Groq, OpenAI, Anthropic, DeepSeek, Gemini, OpenRouter | Default: **Groq (Llama 3.3 70B)** for free, zero-training inference; supports Multi-Key Rotation and BYOK (Bring Your Own Key) for free & paid tiers. |
