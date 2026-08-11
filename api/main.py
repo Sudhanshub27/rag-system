@@ -1,4 +1,14 @@
+import os
 import uvicorn
+
+# Restrict PyTorch and OpenMP memory overhead for 512MB RAM free instances
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
+import torch
+torch.set_num_threads(1)
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

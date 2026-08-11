@@ -1,40 +1,25 @@
-# Core dependencies
+# Core RAG dependencies
 chromadb>=0.5.0
 sentence-transformers>=2.7.0
 torch>=2.0.0
-torchvision>=0.15.0
 numpy>=1.24.0
 pyyaml>=6.0
 python-dotenv>=1.0.0
 rank-bm25>=0.2.2
 
 # PDF loading
-pymupdf>=1.23.0   # PyMuPDF (fast, preferred)
-pypdf>=4.0.0      # Fallback PDF reader
+pymupdf>=1.23.0
+pypdf>=4.0.0
 
 # LLM providers
 anthropic>=0.30.0
 openai>=1.35.0
 
-# Web API & UI
+# Web API & Server
 fastapi>=0.110.0
 uvicorn>=0.28.0
 sse-starlette>=2.0.0
 python-multipart>=0.0.9
-streamlit>=1.35.0
-streamlit-mermaid>=0.2.0
-streamlit-authenticator>=0.4.0
-bcrypt>=4.0.0
-
-
-# Evaluation
-ragas>=0.1.15
-datasets>=2.19.0
-
-# Testing
-pytest>=8.0.0
-pytest-cov>=4.1.0
-pytest-mock>=3.12.0
 
 # Utilities
 tqdm>=4.66.0
