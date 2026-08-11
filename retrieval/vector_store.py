@@ -26,6 +26,9 @@ from utils.models import Chunk, RetrievedChunk
 #    specifically for that user's corpus, eliminating cross-tenant noise and improving recall speed.
 
 
+_shared_chroma_clients: dict[str, Any] = {}
+
+
 class ChromaVectorStore:
     """
     Thin wrapper around ChromaDB for storing and querying chunk embeddings.
@@ -59,22 +62,23 @@ class ChromaVectorStore:
         self.tenant_id = eff_tenant or "default_tenant"
         self.user_id = self.tenant_id
 
-        logger.info(
-            f"Initializing ChromaDB at '{persist_directory}' "
-            f"(collection: '{collection_name}', tenant_id: '{self.tenant_id}')"
-        )
+        if persist_directory not in _shared_chroma_clients:
+            logger.info(
+                f"Initializing shared ChromaDB PersistentClient at '{persist_directory}'"
+            )
+            _shared_chroma_clients[persist_directory] = chromadb.PersistentClient(
+                path=persist_directory,
+                settings=Settings(anonymized_telemetry=False),
+            )
 
-        self._client = chromadb.PersistentClient(
-            path=persist_directory,
-            settings=Settings(anonymized_telemetry=False),
-        )
+        self._client = _shared_chroma_clients[persist_directory]
 
         self._collection = self._client.get_or_create_collection(
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},  # Use cosine distance
         )
         logger.info(
-            f"ChromaDB ready for '{self.collection_name}' — {self._collection.count()} existing chunk(s)"
+            f"ChromaDB collection ready for '{self.collection_name}' — {self._collection.count()} existing chunk(s)"
         )
 
     # ── Public API ────────────────────────────────────────────────────────────

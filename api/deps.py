@@ -32,11 +32,19 @@ def get_tenant_id(request: Request, response: Response) -> str:
     return tenant_id
 
 
+MAX_CACHED_TENANTS = 5
+
+
 def get_pipeline(tenant_id: Annotated[str, get_tenant_id]) -> RAGPipeline:
     """
     Dependency returning an initialized RAGPipeline bound to the tenant_id.
+    Enforces a strict LRU limit on in-memory pipelines to prevent memory leaks on 512MB RAM servers.
     """
     if tenant_id not in _tenant_pipelines:
+        if len(_tenant_pipelines) >= MAX_CACHED_TENANTS:
+            # Evict oldest tenant pipeline to free RAM
+            oldest_tenant = next(iter(_tenant_pipelines))
+            del _tenant_pipelines[oldest_tenant]
         _tenant_pipelines[tenant_id] = RAGPipeline(tenant_id=tenant_id)
     return _tenant_pipelines[tenant_id]
 
