@@ -543,7 +543,12 @@ class AnswerGenerator:
             try:
                 import anthropic
 
-                if not self.model or self.model == generation_config.model or "llama" in self.model or "deepseek" in self.model:
+                if (
+                    not self.model
+                    or self.model == generation_config.model
+                    or "llama" in self.model
+                    or "deepseek" in self.model
+                ):
                     self.model = "claude-3-5-sonnet-20241022"
                 return anthropic.Anthropic(api_key=key)
             except ImportError as e:
@@ -558,7 +563,12 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if not self.model or self.model == generation_config.model or "llama" in self.model or "deepseek" in self.model:
+                if (
+                    not self.model
+                    or self.model == generation_config.model
+                    or "llama" in self.model
+                    or "deepseek" in self.model
+                ):
                     self.model = "gpt-4o-mini"
                 return OpenAI(api_key=key)
             except ImportError as e:
@@ -573,7 +583,12 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if not self.model or self.model == generation_config.model or "llama" in self.model or "free" in self.model:
+                if (
+                    not self.model
+                    or self.model == generation_config.model
+                    or "llama" in self.model
+                    or "free" in self.model
+                ):
                     self.model = "deepseek-chat"
                 return OpenAI(api_key=key, base_url="https://api.deepseek.com")
             except ImportError as e:
@@ -588,7 +603,11 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if not self.model or self.model == generation_config.model or "versatile" in self.model:
+                if (
+                    not self.model
+                    or self.model == generation_config.model
+                    or "versatile" in self.model
+                ):
                     self.model = "meta-llama/llama-3.3-70b-instruct"
                 return OpenAI(
                     api_key=key,
@@ -610,7 +629,12 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if not self.model or self.model == generation_config.model or "llama" in self.model or "free" in self.model:
+                if (
+                    not self.model
+                    or self.model == generation_config.model
+                    or "llama" in self.model
+                    or "free" in self.model
+                ):
                     self.model = "gemini-2.0-flash"
                 return OpenAI(
                     api_key=key,
