@@ -245,36 +245,50 @@ export default function Sidebar({
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           {/* LLM Engine & Provider Selection */}
           <div className="space-y-2">
-            <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center gap-1">
-              <Server className="w-3.5 h-3.5 text-terracotta-600" /> LLM Inference Engine
+            <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Server className="w-3.5 h-3.5 text-terracotta-600" /> Default LLM Engine
+              </span>
+              <span className="text-[10px] text-sage-700 font-semibold bg-sage-100/80 px-1.5 py-0.5 rounded">Zero Training</span>
             </div>
+            <div className="w-full text-xs bg-parchment-50 border border-warmborder rounded-lg p-2.5 text-charcoal-900 font-sans font-medium shadow-2xs flex items-center justify-between">
+              <span>Groq API (Llama 3.3 70B)</span>
+              <span className="text-[10px] text-terracotta-600 font-semibold">Active</span>
+            </div>
+            <div className="text-[10px] text-charcoal-600 bg-parchment-50/80 border border-warmborder p-2 rounded-md font-sans italic leading-tight">
+              ⚡ <strong>Groq API Active:</strong> Groq's official API Terms guarantee your document data is <strong>NEVER stored or used for AI model training</strong>.
+            </div>
+          </div>
+
+          {/* BYOK: Add Your Own API Key */}
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Key className="w-3.5 h-3.5 text-terracotta-600" /> Add Your Own API Key (BYOK)
+              </span>
+              <span className="text-[10px] text-charcoal-500 font-normal italic">Optional</span>
+            </div>
+            
+            {/* Supported Popular Providers */}
             <select
               value={settings.provider || 'groq'}
               onChange={handleProviderChange}
               className="w-full text-xs bg-parchment-50 border border-warmborder rounded-lg p-2 text-charcoal-900 font-sans focus:outline-none focus:border-terracotta-600 shadow-2xs"
             >
-              <option value="groq">Groq (Llama 3.3 70B - Free & Zero Training)</option>
-              <option value="ollama">Ollama (Best Local Llama 3.3 / Qwen 2.5 - Offline)</option>
-              <option value="openai">OpenAI API (GPT-4o - Zero Training API)</option>
-              <option value="anthropic">Anthropic API (Claude 3.5 - Zero Training API)</option>
-              <option value="deepseek">DeepSeek API (DeepSeek Chat - Zero Training API)</option>
+              <option value="groq">Groq API (Free & Paid Keys)</option>
+              <option value="openai">OpenAI API (All GPT Models)</option>
+              <option value="anthropic">Anthropic Claude API (All Claude Models)</option>
+              <option value="deepseek">DeepSeek API (All DeepSeek Models)</option>
+              <option value="gemini">Google Gemini API (All Gemini Models)</option>
+              <option value="openrouter">OpenRouter API (All OpenRouter Models)</option>
             </select>
-          </div>
 
-          {/* BYOK: Bring Your Own API Key */}
-          <div className="space-y-1.5">
-            <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Key className="w-3.5 h-3.5 text-terracotta-600" /> Custom API Key (BYOK)
-              </span>
-              <span className="text-[10px] text-charcoal-500 font-normal italic">Optional</span>
-            </div>
             <div className="relative flex items-center">
               <input
                 type={showApiKey ? 'text' : 'password'}
                 value={settings.apiKey || ''}
                 onChange={handleApiKeyChange}
-                placeholder="Paste custom API key..."
+                placeholder={`Paste ${settings.provider ? settings.provider.toUpperCase() : 'GROQ'} API key...`}
                 className="w-full text-xs bg-parchment-50 border border-warmborder rounded-lg p-2 pr-7 text-charcoal-900 font-mono placeholder:text-charcoal-500/60 focus:outline-none focus:border-terracotta-600 shadow-2xs"
               />
               <button
@@ -287,30 +301,25 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Local PII Anonymization & RAG Controls */}
+          {/* Pipeline & Privacy Controls */}
           <div className="space-y-2">
             <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex items-center gap-1">
               <Cpu className="w-3.5 h-3.5 text-terracotta-600" /> Pipeline & Privacy Options
             </div>
-            <div className="space-y-1.5 text-xs text-charcoal-900 bg-parchment-50/70 border border-warmborder p-3 rounded-lg shadow-2xs">
-              <label className="flex items-start gap-2 cursor-pointer hover:text-terracotta-600 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={!!settings.anonymizePii}
-                  onChange={() => handleCheckboxChange('anonymizePii')}
-                  className="w-3.5 h-3.5 accent-terracotta-600 rounded cursor-pointer mt-0.5"
-                />
-                <div className="flex-1">
-                  <span className="font-semibold flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-terracotta-600 inline" /> Redact PII (Names, Emails)
-                  </span>
-                  <div className="text-[10px] text-charcoal-500 italic leading-tight">
-                    Anonymizes entities locally before sending to LLM API.
-                  </div>
-                </div>
-              </label>
+            
+            {/* Permanent PII Privacy Notice */}
+            <div className="p-2.5 bg-sage-50/80 border border-sage-200 rounded-lg text-xs text-charcoal-900 font-sans space-y-1 shadow-2xs">
+              <div className="font-semibold flex items-center gap-1 text-sage-900">
+                <ShieldCheck className="w-4 h-4 text-sage-700 shrink-0" />
+                Local PII Privacy Active
+              </div>
+              <p className="text-[10px] text-charcoal-600 italic leading-tight">
+                All names, emails, phone numbers, and IP addresses are automatically parsed and redacted locally before any data leaves your browser.
+              </p>
+            </div>
 
-              <label className="flex items-center gap-2 cursor-pointer hover:text-terracotta-600 transition-colors pt-1 border-t border-warmborder/60">
+            <div className="space-y-1.5 text-xs text-charcoal-900 bg-parchment-50/70 border border-warmborder p-3 rounded-lg shadow-2xs">
+              <label className="flex items-center gap-2 cursor-pointer hover:text-terracotta-600 transition-colors">
                 <input
                   type="checkbox"
                   checked={settings.splitView}

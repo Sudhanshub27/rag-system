@@ -46,20 +46,18 @@ export default function Privacy() {
           <section className="space-y-3 p-5 bg-parchment-50 border border-warmborder rounded-xl shadow-sm">
             <h2 className="font-serif font-bold text-lg text-charcoal-900 flex items-center gap-2">
               <Cpu className="w-5 h-5 text-terracotta-600 shrink-0" />
-              LLM API Privacy & Approved Zero-Training Providers
+              LLM API Privacy & Built-in Local PII Parsing
             </h2>
             <p className="text-charcoal-700 leading-relaxed">
-              We strictly enforce provider selection to only include services whose official terms explicitly guarantee <strong>ZERO model training</strong> on submitted prompts and document chunks:
+              Privacy is enforced by default at the architectural level before any query or document chunk is transmitted:
             </p>
             <ul className="list-disc pl-5 space-y-2 text-charcoal-700">
-              <li><strong>Groq Free API (Llama 3.3 70B / Llama 3.1 8B):</strong> Official Terms guarantee zero data retention and zero training on API data.</li>
-              <li><strong>Ollama (100% Offline Local Models):</strong> Runs Llama 3.3 or Qwen 2.5 directly on your machine. Absolutely zero data leaves your local hardware.</li>
-              <li><strong>OpenAI API (GPT-4o / GPT-4o-mini):</strong> Official OpenAI API Business Terms explicitly state: <em>"OpenAI does not train models on data submitted to OpenAI API endpoints."</em></li>
-              <li><strong>Anthropic Claude API:</strong> Official Commercial Terms state: <em>"Anthropic does not train models on Customer Data submitted through our API."</em></li>
-              <li><strong>DeepSeek API:</strong> Official DeepSeek Developer API Terms state prompt data is not retained or used for foundation model training.</li>
+              <li><strong>Default Groq Free API (Llama 3.3 70B):</strong> Official Groq API Terms explicitly guarantee zero data retention and <strong>zero training</strong> on your API prompts or document text.</li>
+              <li><strong>Built-in Local PII Parsing:</strong> Personal identifiers (names, email addresses, phone numbers, and IP addresses) are automatically parsed and redacted into placeholders (`[EMAIL_1]`, `[PERSON_1]`) locally on your device before payload transmission.</li>
+              <li><strong>Bring Your Own Key (BYOK):</strong> Supports pasting your own keys for major enterprise API providers (OpenAI, Anthropic Claude, DeepSeek, Google Gemini, OpenRouter) with complete per-tenant isolation.</li>
             </ul>
-            <div className="p-3 bg-terracotta-100/60 border-l-2 border-terracotta-600 rounded text-xs text-charcoal-900 font-sans mt-3">
-              <strong>Local PII Anonymizer Protection:</strong> Before any chunk is transmitted to external cloud APIs, our local PII Scrubber redacts names, email addresses, phone numbers, and IP addresses into placeholders (`[EMAIL_1]`, `[PERSON_1]`).
+            <div className="p-3 bg-sage-100/80 border-l-2 border-sage-600 rounded text-xs text-charcoal-900 font-sans mt-3">
+              <strong>100% Privacy Guarantee:</strong> Local PII parsing is permanently enabled on all requests. Your real personal names and emails are never exposed to external cloud API endpoints.
             </div>
           </section>
 

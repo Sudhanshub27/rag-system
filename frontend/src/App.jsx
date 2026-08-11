@@ -46,7 +46,7 @@ function MainWorkspace() {
     useMultiQuery: false,
     provider: localStorage.getItem('rag_provider') || 'groq',
     apiKey: localStorage.getItem('rag_api_key') || '',
-    anonymizePii: localStorage.getItem('rag_anonymize_pii') === 'true',
+    anonymizePii: localStorage.getItem('rag_anonymize_pii') !== 'false',
   }));
 
   // Fetch Documents & Stats
@@ -142,7 +142,7 @@ function MainWorkspace() {
           use_multi_query: settings.useMultiQuery,
           provider: settings.provider,
           api_key: settings.apiKey || null,
-          anonymize_pii: !!settings.anonymizePii,
+          anonymize_pii: true,
         }),
         credentials: 'include',
       });

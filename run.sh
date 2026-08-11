@@ -31,6 +31,10 @@ fi
 MODE="${1:-app}"
 
 case "$MODE" in
+    api|backend|server)
+        echo "⚡ Starting FastAPI Backend Server on port 8000..."
+        python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+        ;;
     app|ui|web)
         echo "🚀 Starting Streamlit Web UI..."
         streamlit run app.py
@@ -56,9 +60,10 @@ case "$MODE" in
         python evaluation/evaluate.py
         ;;
     *)
-        echo "Usage: ./run.sh [app|query|ingest|test|eval]"
+        echo "Usage: ./run.sh [api|app|query|ingest|test|eval]"
         echo ""
-        echo "  ./run.sh            Launch Streamlit Web UI (default)"
+        echo "  ./run.sh api        Launch FastAPI Backend Server on port 8000"
+        echo "  ./run.sh app        Launch Streamlit Web UI"
         echo "  ./run.sh query \"?\"  Query the RAG pipeline via CLI"
         echo "  ./run.sh ingest file Ingest a document or directory"
         echo "  ./run.sh test       Run the unit test suite with coverage"

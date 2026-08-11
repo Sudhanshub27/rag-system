@@ -419,6 +419,14 @@ class AnswerGenerator:
         return get_api_key(key_name)
 
     @classmethod
+    def _get_keys_list(cls, key_name: str, custom_key: str | None = None) -> list[str]:
+        """Retrieve list of API keys (supports comma-separated string in env/secrets)."""
+        raw = cls._get_key(key_name, custom_key)
+        if not raw:
+            return []
+        return [k.strip() for k in raw.split(",") if k.strip()]
+
+    @classmethod
     def get_best_ollama_model(cls) -> str:
         """
         Auto-detect the BEST local Ollama model installed on the system.
@@ -535,6 +543,8 @@ class AnswerGenerator:
             try:
                 import anthropic
 
+                if not self.model or self.model == generation_config.model or "llama" in self.model or "deepseek" in self.model:
+                    self.model = "claude-3-5-sonnet-20241022"
                 return anthropic.Anthropic(api_key=key)
             except ImportError as e:
                 raise ImportError(
@@ -548,6 +558,8 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
+                if not self.model or self.model == generation_config.model or "llama" in self.model or "deepseek" in self.model:
+                    self.model = "gpt-4o-mini"
                 return OpenAI(api_key=key)
             except ImportError as e:
                 raise ImportError(
@@ -561,7 +573,7 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if self.model == generation_config.model or "free" in self.model:
+                if not self.model or self.model == generation_config.model or "llama" in self.model or "free" in self.model:
                     self.model = "deepseek-chat"
                 return OpenAI(api_key=key, base_url="https://api.deepseek.com")
             except ImportError as e:
@@ -576,6 +588,8 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
+                if not self.model or self.model == generation_config.model or "versatile" in self.model:
+                    self.model = "meta-llama/llama-3.3-70b-instruct"
                 return OpenAI(
                     api_key=key,
                     base_url="https://openrouter.ai/api/v1",
@@ -596,7 +610,7 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if self.model == generation_config.model or "free" in self.model:
+                if not self.model or self.model == generation_config.model or "llama" in self.model or "free" in self.model:
                     self.model = "gemini-2.0-flash"
                 return OpenAI(
                     api_key=key,
@@ -685,25 +699,56 @@ class AnswerGenerator:
                 if fb not in models_to_try:
                     models_to_try.append(fb)
 
+        # Retrieve key list (supports comma-separated keys in env/secrets)
+        keys = []
+        if self.provider == "groq":
+            keys = self._get_keys_list("GROQ_API_KEY", self.custom_api_key)
+        elif self.provider == "gemini":
+            keys = self._get_keys_list("GEMINI_API_KEY", self.custom_api_key)
+        elif self.provider == "openrouter":
+            keys = self._get_keys_list("OPENROUTER_API_KEY", self.custom_api_key)
+        elif self.provider == "openai":
+            keys = self._get_keys_list("OPENAI_API_KEY", self.custom_api_key)
+        elif self.provider == "deepseek":
+            keys = self._get_keys_list("DEEPSEEK_API_KEY", self.custom_api_key)
+
+        if not keys:
+            keys = [getattr(self._client, "api_key", "")]
+
         last_error = None
-        for m in models_to_try:
-            try:
-                response = self._client.chat.completions.create(
-                    model=m,
-                    max_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                    messages=[
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                )
-                if m != self.model:
-                    logger.info(f"Model fallback succeeded with model '{m}'")
-                return response.choices[0].message.content.strip()
-            except Exception as e:
-                last_error = e
-                logger.warning(
-                    f"Model '{m}' call failed: {e}. Trying fallback model..."
-                )
+        from openai import OpenAI
+
+        base_url = getattr(self._client, "base_url", None)
+        default_headers = getattr(self._client, "default_headers", None)
+
+        for key in keys:
+            if not key:
+                continue
+            client = OpenAI(
+                api_key=key,
+                base_url=base_url,
+                default_headers=default_headers,
+            )
+            for m in models_to_try:
+                try:
+                    response = client.chat.completions.create(
+                        model=m,
+                        max_tokens=self.max_tokens,
+                        temperature=self.temperature,
+                        messages=[
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user},
+                        ],
+                    )
+                    if m != self.model or key != keys[0]:
+                        logger.info(
+                            f"LLM execution succeeded with model '{m}' (key prefix '{key[:8]}...')"
+                        )
+                    return response.choices[0].message.content.strip()
+                except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        f"Key '{key[:8]}...' model '{m}' call failed: {e}. Trying next key/model..."
+                    )
 
         raise last_error

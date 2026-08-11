@@ -26,6 +26,22 @@ def main():
         print("🚀 Starting Streamlit Web UI...")
         subprocess.run([sys.executable, "-m", "streamlit", "run", "app.py"])
 
+    elif mode in ("api", "backend", "server"):
+        print("⚡ Starting FastAPI Backend Server on port 8000...")
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "api.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--reload",
+            ]
+        )
+
     elif mode in ("query", "cli"):
         query_text = (
             " ".join(args[1:])
@@ -62,7 +78,8 @@ def main():
     else:
         print("Ask My Documents RAG — One-Click Launcher\n")
         print("Usage:")
-        print("  python run.py            # Launch Web UI (default)")
+        print("  python run.py api        # Launch FastAPI Backend Server (port 8000)")
+        print("  python run.py app        # Launch Streamlit Web UI")
         print('  python run.py query "?" # Run CLI query')
         print("  python run.py ingest path# Ingest document or directory")
         print("  python run.py test       # Run unit test suite")

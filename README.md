@@ -31,8 +31,8 @@ A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** we
 | ✂️ **2. Chunking Strategy** | Semantic Pitch-Deck Chunker | Sentence-boundary aware regex splitting (`250` token size, `15` token min limit to preserve bullet points). |
 | 🗄️ **3. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `SentenceTransformers all-MiniLM-L6-v2` (384-dim) with isolated per-tenant vector collections (`tenant_<id>`). |
 | 🔍 **4. Retrieval Engine** | Hybrid BM25 + Vector Search + Reranker | Combines `rank_bm25` and ChromaDB via RRF fusion + `ms-marco-MiniLM-L-6-v2` cross-encoder reranking. |
-| 🛡️ **5. Privacy Layer** | Local PII Redaction & Zero-Training APIs | Scrubber sanitizes names, emails, IPs locally; routes requests exclusively to contractually zero-training APIs or local Ollama. |
-| 🤖 **6. LLM Inference** | Groq, Ollama, OpenAI, Anthropic, DeepSeek | Default: **Groq (Llama 3.3 70B)** for ultra-fast, free, zero-training inference; supports BYOK (Bring Your Own Key). |
+| 🛡️ **5. Privacy Layer** | Built-in Local PII Redaction & Zero-Training APIs | Scrubber sanitizes names, emails, IPs locally by default; routes requests exclusively to contractually zero-training APIs like Groq. |
+| 🤖 **6. LLM Inference** | Groq, OpenAI, Anthropic, DeepSeek, Gemini, OpenRouter | Default: **Groq (Llama 3.3 70B)** for free, zero-training inference; supports Multi-Key Rotation and BYOK (Bring Your Own Key) for free & paid tiers. |
 | 🖥️ **7. Modern Interfaces** | React + Vite UI, FastAPI Backend & Streamlit | Premium Parchment Editorial design UI (`frontend/`), FastAPI SSE streaming endpoints (`api/`), and legacy Streamlit app (`app.py`). |
 
 ---
@@ -41,15 +41,11 @@ A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** we
 
 This application enforces a strict privacy-first architecture to ensure **your documents remain private and are NEVER used to train AI models**:
 
-1. **Strict Provider Filtering**: Only supports LLM providers with contractual zero data training terms:
-   - **Groq API**: Documented policy against data retention or model training.
-   - **Ollama**: 100% offline, air-gapped local execution on your machine.
-   - **OpenAI API**: Developer API terms explicitly exclude API data from model training.
-   - **Anthropic Claude API**: Commercial API terms guarantee zero data retention/training.
-   - **DeepSeek API**: Developer API policy strictly prohibits training on user payload data.
-2. **Local PII Anonymization**: Optional client-side regex scrubber (`utils/anonymizer.py`) sanitizes personal names, email addresses, phone numbers, and IP addresses *before* payload transmission to any external provider.
-3. **No Account / Cookie-Based Multi-Tenancy**: Anonymous `tenant_id` stored in `HttpOnly` browser cookies isolates database vector collections per user session without requesting email or login credentials.
-4. **Data Control**: Delete individual documents or execute a full tenant data wipe with one click.
+1. **Strict Provider Filtering**: Uses Groq API as the default cloud provider whose official terms guarantee zero data retention and zero training on API payloads.
+2. **Built-in Local PII Anonymization**: Client-side regex scrubber (`utils/anonymizer.py`) automatically sanitizes personal names, email addresses, phone numbers, and IP addresses *before* payload transmission to any external provider.
+3. **Multi-Key Rotation & BYOK**: Supports comma-separated API keys (`GROQ_API_KEY=key1,key2,key3`) for rate limit rotation, as well as Bring Your Own Key (BYOK) for any free or paid API key across Groq, OpenAI, Anthropic Claude, DeepSeek, Google Gemini, and OpenRouter.
+4. **No Account / Cookie-Based Multi-Tenancy**: Anonymous `tenant_id` stored in `HttpOnly` browser cookies isolates database vector collections per user session without requesting email or login credentials.
+5. **Data Control**: Delete individual documents or execute a full tenant data wipe with one click.
 
 ---
 
@@ -134,12 +130,12 @@ Open `http://localhost:5173` in your browser.
 ---
 
 ## 🔐 Supported LLM Inference Engines
-
-- **Groq** (`llama-3.3-70b-versatile` & `llama-3.1-8b-instant`) — *Default Free Tier*
-- **Ollama** (`llama3.3`, `qwen2.5`, `mistral`) — *100% Air-Gapped Local Inference*
-- **OpenAI API** (`gpt-4o`, `gpt-4o-mini`)
-- **Anthropic Claude API** (`claude-3-5-sonnet`)
-- **DeepSeek API** (`deepseek-chat`)
+- **Groq API** — *Default Free Tier (Zero Training Guaranteed)*
+- **OpenAI API** — *Supports All Free & Paid GPT Models*
+- **Anthropic Claude API** — *Supports All Free & Paid Claude Models*
+- **DeepSeek API** — *Supports All DeepSeek Models*
+- **Google Gemini API** — *Supports All Gemini Models*
+- **OpenRouter API** — *Multi-Model Hub for All Open-Source & Closed Models*
 
 ---
 
