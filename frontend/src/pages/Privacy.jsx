@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Key, Lock, Trash2, UserX, ShieldCheck } from 'lucide-react';
+import { Shield, Key, Lock, Trash2, UserX, ShieldCheck, Cpu } from 'lucide-react';
 
 export default function Privacy() {
   return (
@@ -40,6 +40,27 @@ export default function Privacy() {
             <p className="text-charcoal-700 leading-relaxed">
               What you upload is used for exactly one thing: answering your questions about it. It is never used to train any model, never reviewed by us, never shared with anyone else. No other user of this app can see your documents, your questions, or your answers — your data is stored in a space that's isolated to your ID alone.
             </p>
+          </section>
+
+          {/* API Data Flow Clarification */}
+          <section className="space-y-3 p-5 bg-parchment-50 border border-warmborder rounded-xl shadow-sm">
+            <h2 className="font-serif font-bold text-lg text-charcoal-900 flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-terracotta-600 shrink-0" />
+              LLM API Privacy & Approved Zero-Training Providers
+            </h2>
+            <p className="text-charcoal-700 leading-relaxed">
+              We strictly enforce provider selection to only include services whose official terms explicitly guarantee <strong>ZERO model training</strong> on submitted prompts and document chunks:
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-charcoal-700">
+              <li><strong>Groq Free API (Llama 3.3 70B / Llama 3.1 8B):</strong> Official Terms guarantee zero data retention and zero training on API data.</li>
+              <li><strong>Ollama (100% Offline Local Models):</strong> Runs Llama 3.3 or Qwen 2.5 directly on your machine. Absolutely zero data leaves your local hardware.</li>
+              <li><strong>OpenAI API (GPT-4o / GPT-4o-mini):</strong> Official OpenAI API Business Terms explicitly state: <em>"OpenAI does not train models on data submitted to OpenAI API endpoints."</em></li>
+              <li><strong>Anthropic Claude API:</strong> Official Commercial Terms state: <em>"Anthropic does not train models on Customer Data submitted through our API."</em></li>
+              <li><strong>DeepSeek API:</strong> Official DeepSeek Developer API Terms state prompt data is not retained or used for foundation model training.</li>
+            </ul>
+            <div className="p-3 bg-terracotta-100/60 border-l-2 border-terracotta-600 rounded text-xs text-charcoal-900 font-sans mt-3">
+              <strong>Local PII Anonymizer Protection:</strong> Before any chunk is transmitted to external cloud APIs, our local PII Scrubber redacts names, email addresses, phone numbers, and IP addresses into placeholders (`[EMAIL_1]`, `[PERSON_1]`).
+            </div>
           </section>
 
           {/* Tenant ID Security Guarantee */}

@@ -10,13 +10,27 @@ import Privacy from './pages/Privacy';
 import RetrievalSettings from './pages/RetrievalSettings';
 import FAQ from './pages/FAQ';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/api' : 'http://localhost:8000/api';
 
 function MainWorkspace() {
   const [tenantId, setTenantId] = useState('');
   const [documents, setDocuments] = useState([]);
   const [stats, setStats] = useState({});
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rag_chat_messages');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rag_chat_messages', JSON.stringify(messages));
+    } catch (e) {}
+  }, [messages]);
+
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamText, setCurrentStreamText] = useState('');
   const [selectedCitation, setSelectedCitation] = useState(null);
@@ -25,12 +39,15 @@ function MainWorkspace() {
   const [followups, setFollowups] = useState([]);
 
   // RAG Pipeline Settings & Features State
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState(() => ({
     splitView: true,
     debugScores: false,
     useHyde: false,
     useMultiQuery: false,
-  });
+    provider: localStorage.getItem('rag_provider') || 'groq',
+    apiKey: localStorage.getItem('rag_api_key') || '',
+    anonymizePii: localStorage.getItem('rag_anonymize_pii') === 'true',
+  }));
 
   // Fetch Documents & Stats
   const refreshData = async () => {
@@ -123,6 +140,9 @@ function MainWorkspace() {
           question,
           use_hyde: settings.useHyde,
           use_multi_query: settings.useMultiQuery,
+          provider: settings.provider,
+          api_key: settings.apiKey || null,
+          anonymize_pii: !!settings.anonymizePii,
         }),
         credentials: 'include',
       });
@@ -161,15 +181,24 @@ function MainWorkspace() {
                 setCurrentStreamText(streamedText);
               } else if (currentEvent === 'final') {
                 finalData = data;
+              } else if (currentEvent === 'error') {
+                throw new Error(data.error || 'Failed to generate answer from provider');
               }
-            } catch (e) {}
+            } catch (e) {
+              if (e.message && e.message.includes('Failed to generate')) {
+                throw e;
+              }
+            }
           }
         }
       }
 
+      const fallbackText = "I could not find relevant information in your uploaded documents to answer this question. Please upload a document containing details on this topic or rephrase your query.";
+      const finalContent = streamedText.trim() || finalData?.answer || fallbackText;
+
       const assistantMsg = {
         role: 'assistant',
-        content: streamedText,
+        content: finalContent,
         citations: finalData?.retrieved_chunks || [],
         faithfulness: finalData?.faithfulness_score,
         relevance: finalData?.relevance_score,
@@ -178,9 +207,15 @@ function MainWorkspace() {
       setMessages((prev) => [...prev, assistantMsg]);
 
       // Request contextual follow-up questions
-      fetchFollowups(question, streamedText);
+      fetchFollowups(question, finalContent);
     } catch (err) {
       setError(err.message);
+      const errorFallbackMsg = {
+        role: 'assistant',
+        content: `⚠️ ${err.message}\n\nI could not find relevant information in your uploaded documents to answer this question. Please make sure a relevant document is uploaded or select a valid LLM provider in the sidebar.`,
+        citations: [],
+      };
+      setMessages((prev) => [...prev, errorFallbackMsg]);
     } finally {
       setIsStreaming(false);
       setCurrentStreamText('');
@@ -220,6 +255,11 @@ function MainWorkspace() {
     }
   };
 
+  const handleClearHistory = () => {
+    setMessages([]);
+    localStorage.removeItem('rag_chat_messages');
+  };
+
   const handleDeleteAllData = async () => {
     try {
       await fetch(`${API_BASE}/tenant/${tenantId}`, {
@@ -227,6 +267,7 @@ function MainWorkspace() {
         credentials: 'include',
       });
       setMessages([]);
+      localStorage.removeItem('rag_chat_messages');
       setSelectedCitation(null);
       await refreshData();
     } catch (err) {
@@ -245,6 +286,7 @@ function MainWorkspace() {
         fileProgress={fileProgress}
         onDeleteDoc={handleDeleteDoc}
         onDeleteAllData={handleDeleteAllData}
+        onClearHistory={handleClearHistory}
         onSelectCheckpoint={handleSelectCheckpoint}
         settings={settings}
         onUpdateSettings={setSettings}

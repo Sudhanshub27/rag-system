@@ -164,8 +164,14 @@ export default function ReadingPane({
                 );
               }
 
-              // Deduplicate citations by (source_file, page_number)
-              const uniqueSources = deduplicateCitations(msg.citations || []);
+              const isFallbackAnswer =
+                msg.is_fallback ||
+                msg.content?.includes('I could not find relevant information') ||
+                msg.content?.includes('Insufficient information') ||
+                msg.content?.includes('not found in your uploaded documents');
+
+              // Deduplicate citations by (source_file, page_number) — Suppress completely for fallback answers
+              const uniqueSources = isFallbackAnswer ? [] : deduplicateCitations(msg.citations || []);
 
               return (
                 <article key={idx} className="space-y-4 font-serif text-charcoal-900 leading-relaxed text-base">

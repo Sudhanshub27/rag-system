@@ -46,8 +46,8 @@ retrieval:
 # LLM (Generation)
 # ---------------------
 generation:
-  provider: "openrouter"        # "anthropic" | "openai" | "deepseek" | "openrouter"
-  model: "deepseek/deepseek-chat"  # Active, fast DeepSeek model on OpenRouter
+  provider: "groq"        # "groq" | "ollama" | "openai" | "anthropic" | "deepseek"
+  model: "llama-3.3-70b-versatile"  # Free & zero-training fast model on Groq
 
   max_tokens: 2048
   temperature: 0.1         # Low temp for factual grounding

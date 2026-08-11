@@ -14,6 +14,10 @@ class QueryRequest(BaseModel):
     question: str
     use_hyde: bool = False
     use_multi_query: bool = False
+    provider: str | None = None
+    model: str | None = None
+    api_key: str | None = None
+    anonymize_pii: bool = False
 
 
 @router.post("/query")
@@ -37,6 +41,10 @@ async def query_pipeline(
                 question=req.question,
                 use_hyde=req.use_hyde,
                 use_multi_query=req.use_multi_query,
+                provider=req.provider,
+                model=req.model,
+                api_key=req.api_key,
+                anonymize_pii=req.anonymize_pii,
             )
 
             # 2. Stream answer text in realistic token chunks
@@ -53,24 +61,25 @@ async def query_pipeline(
 
             # 3. Final metadata event with citations & source chunks
             citations_data = []
-            for idx, rc in enumerate(rag_res.retrieved_chunks):
-                citations_data.append(
-                    {
-                        "id": idx + 1,
-                        "chunk_id": rc.chunk.chunk_id,
-                        "source": rc.chunk.source,
-                        "page": rc.chunk.page,
-                        "text": rc.chunk.text,
-                        "score": round(rc.score, 4),
-                    }
-                )
+            if not rag_res.is_fallback:
+                for idx, rc in enumerate(rag_res.retrieved_chunks):
+                    citations_data.append(
+                        {
+                            "id": idx + 1,
+                            "chunk_id": rc.chunk.chunk_id,
+                            "source": rc.chunk.source,
+                            "page": rc.chunk.page,
+                            "text": rc.chunk.text,
+                            "score": round(rc.score, 4),
+                        }
+                    )
 
             yield {
                 "event": "final",
                 "data": json.dumps(
                     {
                         "answer": rag_res.answer,
-                        "citations": rag_res.citations,
+                        "citations": [] if rag_res.is_fallback else rag_res.citations,
                         "retrieved_chunks": citations_data,
                         "is_fallback": rag_res.is_fallback,
                         "faithfulness_score": rag_res.faithfulness_score,

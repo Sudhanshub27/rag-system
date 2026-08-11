@@ -4,6 +4,11 @@ import { HelpCircle, FileText, Cookie, HardDrive, Smartphone, CheckCircle, Shiel
 export default function FAQ() {
   const faqs = [
     {
+      q: 'Which LLM providers are supported, and is my data ever used for training?',
+      a: 'We strictly support only LLM options with documented zero-training policies: Groq API (Free & Paid zero-training policy), Ollama (100% Offline Local), OpenAI API (never trained on API data), Anthropic Commercial API (never trained on API data), and DeepSeek API (zero model training policy). Consumer free tiers that log data for model training (like Google AI Studio free tier) are intentionally excluded.',
+      icon: ShieldCheck,
+    },
+    {
       q: 'Can someone steal or access my documents if they see my Tenant ID?',
       a: 'No — access to your indexed documents and queries is strictly enforced by server-side session cookies. Knowing or copying a Tenant ID string does not grant third parties permission to query or view your documents.',
       icon: ShieldCheck,

@@ -93,7 +93,7 @@ rerank_instruction: |
 # ---------------------
 # Fallback response
 # ---------------------
-fallback_response: "Insufficient information to answer based on the provided documents."
+fallback_response: "I could not find relevant information in your uploaded documents to answer this question. Please upload a document containing details on this topic or rephrase your query."
 
 # ---------------------
 # Thresholds

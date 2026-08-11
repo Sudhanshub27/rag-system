@@ -60,34 +60,43 @@ def test_answer_generator_provider_init_validation(monkeypatch, mocker):
     mocker.patch("anthropic.Anthropic")
     mocker.patch("openai.OpenAI")
 
-    # Clear all keys
+    # Clear all keys in module and env helper
+    monkeypatch.setattr("generation.answer_generator.GROQ_API_KEY", "")
     monkeypatch.setattr("generation.answer_generator.ANTHROPIC_API_KEY", "")
     monkeypatch.setattr("generation.answer_generator.OPENAI_API_KEY", "")
     monkeypatch.setattr("generation.answer_generator.DEEPSEEK_API_KEY", "")
     monkeypatch.setattr("generation.answer_generator.OPENROUTER_API_KEY", "")
     monkeypatch.setattr("generation.answer_generator.GEMINI_API_KEY", "")
+    monkeypatch.setattr("generation.answer_generator.get_api_key", lambda k: "")
 
     # Invalid provider
     with pytest.raises(ValueError):
         AnswerGenerator(provider="invalid_provider")
 
-    # Missing API keys raises EnvironmentError
-    with pytest.raises(EnvironmentError):
+    # Missing API keys raises EnvironmentError / OSError
+    with pytest.raises((EnvironmentError, OSError)):
+        AnswerGenerator(provider="groq")
+
+    with pytest.raises((EnvironmentError, OSError)):
         AnswerGenerator(provider="anthropic")
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises((EnvironmentError, OSError)):
         AnswerGenerator(provider="openai")
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises((EnvironmentError, OSError)):
         AnswerGenerator(provider="deepseek")
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises((EnvironmentError, OSError)):
         AnswerGenerator(provider="openrouter")
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises((EnvironmentError, OSError)):
         AnswerGenerator(provider="gemini")
 
     # Valid API keys
+    monkeypatch.setattr("generation.answer_generator.GROQ_API_KEY", "dummy-key")
+    gen_groq = AnswerGenerator(provider="groq")
+    assert gen_groq.provider == "groq"
+
     monkeypatch.setattr("generation.answer_generator.ANTHROPIC_API_KEY", "dummy-key")
     gen_anthropic = AnswerGenerator(provider="anthropic")
     assert gen_anthropic.provider == "anthropic"
@@ -107,6 +116,10 @@ def test_answer_generator_provider_init_validation(monkeypatch, mocker):
     monkeypatch.setattr("generation.answer_generator.GEMINI_API_KEY", "dummy-key")
     gen_gemini = AnswerGenerator(provider="gemini")
     assert gen_gemini.provider == "gemini"
+
+    # Ollama (requires no external API key)
+    gen_ollama = AnswerGenerator(provider="ollama")
+    assert gen_ollama.provider == "ollama"
 
 
 def test_call_anthropic_and_openai_methods(monkeypatch, mocker):

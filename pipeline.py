@@ -210,14 +210,22 @@ class RAGPipeline:
         question: str,
         use_hyde: bool = False,
         use_multi_query: bool = False,
+        provider: str | None = None,
+        model: str | None = None,
+        api_key: str | None = None,
+        anonymize_pii: bool = False,
     ) -> RAGResponse:
         """
-        Answer a question using the full RAG pipeline with optional ML features.
+        Answer a question using the full RAG pipeline with optional ML & Privacy features.
 
         Args:
             question: Natural language question from the user.
             use_hyde: Enable HyDE (Hypothetical Document Embeddings) retrieval.
             use_multi_query: Enable Multi-Query Expansion retrieval.
+            provider: Optional LLM provider override ('groq', 'ollama', 'openai', etc.).
+            model: Optional model name override.
+            api_key: Optional custom API key (Bring Your Own Key - BYOK).
+            anonymize_pii: If True, redacts PII before sending context to LLM.
 
         Returns:
             RAGResponse with answer, citations, ML scores, and metadata.
@@ -225,8 +233,20 @@ class RAGPipeline:
         start = time.perf_counter()
         rate_limiter.check_rate_limit(self.user_id)
         logger.info(
-            f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}) ==="
+            f"=== Query: '{question}' (HyDE={use_hyde}, MultiQuery={use_multi_query}, provider={provider}, anonymize_pii={anonymize_pii}) ==="
         )
+
+        generator = self._generator
+        if provider or model or api_key:
+            try:
+                generator = AnswerGenerator(
+                    provider=provider or self._generator.provider,
+                    model=model or self._generator.model,
+                    api_key=api_key,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to instantiate custom generator ({e}), falling back to default: {e}")
+                generator = self._generator
 
         # Section-Structured Summarization Route for broad overview queries
         if is_summary_query(question):
@@ -234,7 +254,7 @@ class RAGPipeline:
                 "Broad summary query detected — routing to Section-Structured Document Summary path"
             )
             ordered_chunks = self._retriever.get_ordered_document_chunks()
-            response = self._generator.generate_summary(question, ordered_chunks)
+            response = generator.generate_summary(question, ordered_chunks, anonymize_pii=anonymize_pii)
             elapsed = time.perf_counter() - start
             logger.info(
                 f"Summary query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
@@ -249,14 +269,14 @@ class RAGPipeline:
         # ML Feature 1: HyDE Retrieval
         if use_hyde:
             logger.info("Generating hypothetical document for HyDE...")
-            hyde_doc = self._generator.generate_hyde_doc(question)
+            hyde_doc = generator.generate_hyde_doc(question)
             if hyde_doc:
                 search_query = f"{question}\n{hyde_doc}"
 
         # ML Feature 2: Multi-Query Expansion
         if use_multi_query:
             logger.info("Generating query expansions...")
-            expanded_queries = self._generator.generate_query_expansions(question)
+            expanded_queries = generator.generate_query_expansions(question)
             all_chunks = self._retriever.retrieve(search_query)
             for eq in expanded_queries:
                 extra = self._retriever.retrieve(eq)
@@ -286,7 +306,17 @@ class RAGPipeline:
         retrieved = retrieved_pool[:max_chunks]
 
         # Generate answer & compute Self-RAG metrics
-        response = self._generator.generate(question, retrieved)
+        response = generator.generate(question, retrieved, anonymize_pii=anonymize_pii)
+        response.hyde_document = hyde_doc
+        response.expanded_queries = expanded_queries
+
+        elapsed = time.perf_counter() - start
+        logger.info(
+            f"Query answered in {elapsed:.2f}s | fallback={response.is_fallback} | "
+            f"faithfulness={response.faithfulness_score:.2f} | relevance={response.relevance_score:.2f}"
+        )
+
+        return response
         response.hyde_document = hyde_doc
         response.expanded_queries = expanded_queries
 

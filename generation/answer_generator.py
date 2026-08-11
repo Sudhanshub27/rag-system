@@ -1,21 +1,27 @@
 """
 LLM Answer Generator
 Formats retrieved context into a prompt and calls the configured LLM.
-Enforces citation-grounded answers and detects insufficient-context situations.
+Supports Groq, Ollama (Best Local Models), Anthropic, OpenAI, DeepSeek, OpenRouter, and Gemini.
+Enforces citation-grounded answers, PII anonymization, and detects insufficient-context situations.
 """
 
+import os
 import sys
+import urllib.request
+import json
 
 from config import (
     generation_config,
     get_api_key,
     prompts_config,
 )
+from utils.anonymizer import pii_anonymizer
 from utils.helpers import format_citations
 from utils.logger import logger
 from utils.models import RAGResponse, RetrievedChunk
 
 # Module-level API key attributes (supports pytest monkeypatching & st.secrets)
+GROQ_API_KEY = get_api_key("GROQ_API_KEY")
 ANTHROPIC_API_KEY = get_api_key("ANTHROPIC_API_KEY")
 OPENAI_API_KEY = get_api_key("OPENAI_API_KEY")
 DEEPSEEK_API_KEY = get_api_key("DEEPSEEK_API_KEY")
@@ -28,6 +34,8 @@ class AnswerGenerator:
     Generate answers strictly grounded in retrieved chunks.
 
     Supports:
+      - Groq (Llama-3.3-70b, Llama-3.1-8b - Free & Zero Training)
+      - Ollama (Best Local Models: Llama 3.3, Qwen 2.5, Mistral)
       - Anthropic Claude
       - OpenAI GPT models
       - DeepSeek
@@ -35,10 +43,11 @@ class AnswerGenerator:
       - Google Gemini
 
     Args:
-        provider:    'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'.
+        provider:    'groq', 'ollama', 'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'.
         model:       Model name string.
         max_tokens:  Maximum tokens in the generated response.
         temperature: Sampling temperature (low = more deterministic).
+        api_key:     Optional custom API key (Bring Your Own API Key - BYOK).
     """
 
     def __init__(
@@ -47,20 +56,10 @@ class AnswerGenerator:
         model: str = generation_config.model,
         max_tokens: int = generation_config.max_tokens,
         temperature: float = generation_config.temperature,
+        api_key: str | None = None,
     ):
-        if any(
-            bad in model
-            for bad in (
-                "google/gemini-2.0-flash-lite",
-                "google/gemini-2.0-pro",
-                "deepseek/deepseek-r1",
-                "qwen/qwen-2.5",
-                "meta-llama/llama-3.1",
-            )
-        ):
-            model = "deepseek/deepseek-chat"
-
-        self.provider = provider
+        self.custom_api_key = api_key
+        self.provider = (provider or "groq").lower()
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -73,6 +72,7 @@ class AnswerGenerator:
         query: str,
         retrieved_chunks: list[RetrievedChunk],
         min_chunks_required: int = 1,
+        anonymize_pii: bool = False,
     ) -> RAGResponse:
         """
         Generate a cited answer from retrieved chunks.
@@ -81,11 +81,12 @@ class AnswerGenerator:
             query:               The user's question.
             retrieved_chunks:    Chunks returned by the retriever.
             min_chunks_required: If fewer chunks are available, return fallback.
+            anonymize_pii:       Redact names, emails, phones before sending to LLM.
 
         Returns:
             RAGResponse with answer text, citations, and metadata.
         """
-        logger.info(f"Generating answer for query: '{query[:80]}'")
+        logger.info(f"Generating answer for query: '{query[:80]}' (provider={self.provider}, anonymize_pii={anonymize_pii})")
         logger.debug(f"Using {len(retrieved_chunks)} context chunk(s)")
 
         # Guard: empty retrieval
@@ -101,6 +102,15 @@ class AnswerGenerator:
 
         # Build numbered context string
         context = self._build_context(retrieved_chunks)
+        pii_mapping = {}
+
+        # Local PII Anonymization Layer (Redact PII before sending to external API)
+        if anonymize_pii:
+            query_anon, q_map = pii_anonymizer.anonymize(query)
+            context_anon, c_map = pii_anonymizer.anonymize(context)
+            query = query_anon
+            context = context_anon
+            pii_mapping = {**q_map, **c_map}
 
         # Build the full prompt
         prompt = prompts_config.answer_prompt.format(
@@ -108,18 +118,51 @@ class AnswerGenerator:
             question=query,
         )
 
-        # Call the LLM
-        raw_answer = self._call_llm(prompt)
-        cleaned_answer = self._clean_reasoning(raw_answer)
+        # Call the LLM with safe fallback exception handling
+        try:
+            raw_answer = self._call_llm(prompt)
+            cleaned_answer = self._clean_reasoning(raw_answer)
+        except Exception as e:
+            logger.error(f"LLM execution error: {e}")
+            return RAGResponse(
+                answer=f"⚠️ Unable to generate response with provider '{self.provider}'. {e}\n\nFallback: {prompts_config.fallback_response}",
+                citations=[],
+                retrieved_chunks=retrieved_chunks,
+                query=query,
+                is_fallback=True,
+            )
 
-        # Check for explicit fallback signal from LLM
-        is_fallback = prompts_config.fallback_response.lower() in cleaned_answer.lower()
+        # De-anonymize PII placeholders back to real tokens if anonymization was enabled
+        if anonymize_pii and pii_mapping:
+            cleaned_answer = pii_anonymizer.deanonymize(cleaned_answer, pii_mapping)
 
-        citations = format_citations(retrieved_chunks)
+        # Check for explicit fallback signals or insufficient context keywords
+        fallback_keywords = [
+            "could not find",
+            "insufficient information",
+            "cannot answer",
+            "does not contain",
+            "not mentioned",
+            "no information",
+            "unable to answer",
+            "not provided in the context",
+            "context does not contain",
+            prompts_config.fallback_response.lower(),
+        ]
+        is_fallback = any(kw in cleaned_answer.lower() for kw in fallback_keywords) or len(cleaned_answer.strip()) < 5
+
+        if is_fallback:
+            cleaned_answer = prompts_config.fallback_response
+            citations = []
+            retrieved_chunks = []
+        else:
+            citations = format_citations(retrieved_chunks)
 
         # Self-RAG ML Evaluation: Faithfulness & Context Relevance
-        faithfulness, relevance = self.evaluate_faithfulness_and_relevance(
-            cleaned_answer, query, retrieved_chunks
+        faithfulness, relevance = (
+            (0.0, 0.0) if is_fallback else self.evaluate_faithfulness_and_relevance(
+                cleaned_answer, query, retrieved_chunks
+            )
         )
 
         logger.info(
@@ -142,22 +185,13 @@ class AnswerGenerator:
         self,
         query: str,
         retrieved_chunks: list[RetrievedChunk],
+        anonymize_pii: bool = False,
     ) -> RAGResponse:
         """
         Generate a section-structured document summary from ordered document chunks.
-
-        Args:
-            query:            Summary request query (e.g. "explain the document").
-            retrieved_chunks: All document chunks sorted by page and position.
-
-        Returns:
-            RAGResponse with section-structured summary and page citations.
         """
         logger.info(f"Generating summary for query: '{query[:80]}'")
         if not retrieved_chunks:
-            logger.warning(
-                "No chunks available for summary generation — returning fallback"
-            )
             return RAGResponse(
                 answer=prompts_config.fallback_response,
                 citations=[],
@@ -166,7 +200,6 @@ class AnswerGenerator:
                 is_fallback=True,
             )
 
-        # Build sequential context string with page markers
         context_parts = []
         for rc in retrieved_chunks:
             c = rc.chunk
@@ -174,6 +207,12 @@ class AnswerGenerator:
             c_idx = c.metadata.get("chunk_index", 0)
             context_parts.append(f"--- [Page {pg} | Chunk {c_idx}] ---\n{c.text}")
         context = "\n\n".join(context_parts)
+
+        pii_mapping = {}
+        if anonymize_pii:
+            query, q_map = pii_anonymizer.anonymize(query)
+            context, c_map = pii_anonymizer.anonymize(context)
+            pii_mapping = {**q_map, **c_map}
 
         summarize_template = getattr(
             prompts_config,
@@ -189,10 +228,11 @@ class AnswerGenerator:
         raw_answer = self._call_llm(prompt)
         cleaned_answer = self._clean_reasoning(raw_answer)
 
+        if anonymize_pii and pii_mapping:
+            cleaned_answer = pii_anonymizer.deanonymize(cleaned_answer, pii_mapping)
+
         is_fallback = prompts_config.fallback_response.lower() in cleaned_answer.lower()
         citations = format_citations(retrieved_chunks)
-
-        logger.info(f"Summary generated ({len(cleaned_answer)} chars)")
 
         return RAGResponse(
             answer=cleaned_answer,
@@ -205,9 +245,6 @@ class AnswerGenerator:
         )
 
     def generate_hyde_doc(self, query: str) -> str:
-        """
-        Generate a hypothetical document passage for HyDE (Hypothetical Document Embeddings) retrieval.
-        """
         prompt = (
             f"Write a short, realistic 2-3 sentence passage that directly answers this question:\n"
             f"Question: {query}\n\nPassage:"
@@ -220,9 +257,6 @@ class AnswerGenerator:
             return query
 
     def generate_query_expansions(self, query: str, num_queries: int = 2) -> list[str]:
-        """
-        Generate semantic variations of the user query for Multi-Query Expansion retrieval.
-        """
         prompt = (
             f"Generate {num_queries} alternative search queries for searching a document database.\n"
             f"Output ONLY the queries, one per line. No numbers or prefixes.\n\nQuery: {query}"
@@ -241,9 +275,6 @@ class AnswerGenerator:
     def evaluate_faithfulness_and_relevance(
         self, answer: str, query: str, chunks: list[RetrievedChunk]
     ) -> tuple[float, float]:
-        """
-        Compute quantitative Faithfulness and Context Relevance scores (Self-RAG evaluation).
-        """
         if not answer or not chunks:
             return 0.0, 0.0
 
@@ -251,7 +282,6 @@ class AnswerGenerator:
 
         context_text = " ".join(rc.chunk.text.lower() for rc in chunks)
 
-        # Faithfulness: answer words present in context
         words = [
             w.lower()
             for w in re.findall(r"\w{4,}", answer)
@@ -274,7 +304,6 @@ class AnswerGenerator:
             matches = sum(1 for w in words if w in context_text)
             faithfulness = round(matches / len(words), 2)
 
-        # Context Relevance: query words present in context
         q_words = [
             w.lower()
             for w in re.findall(r"\w{3,}", query)
@@ -307,10 +336,7 @@ class AnswerGenerator:
         if not text:
             return ""
 
-        # 1. Strip <think>...</think> blocks
         text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
-
-        # 2. Strip safety guardrail metadata lines (e.g., "User Safety: safe")
         text = re.sub(
             r"^(user\s+safety:\s*safe\s*)+", "", text, flags=re.IGNORECASE
         ).strip()
@@ -318,7 +344,6 @@ class AnswerGenerator:
             r"\n(user\s+safety:\s*safe\s*)+", "\n", text, flags=re.IGNORECASE
         ).strip()
 
-        # 3. Check if text starts with thinking preamble before "Answer:" or "Final Answer:"
         for marker in ("\nAnswer:", "\nFinal Answer:", "Answer:"):
             if marker in text:
                 parts = text.split(marker, 1)
@@ -341,12 +366,10 @@ class AnswerGenerator:
                     text = parts[1]
                     break
 
-        # 4. Clean leading 'Answer:' or 'Final Answer:' labels
         text = re.sub(
             r"^(Answer|Final Answer):\s*", "", text.strip(), flags=re.IGNORECASE
         )
 
-        # 5. Remove leftover leading preamble lines
         lines = text.splitlines()
         filtered_lines = []
         skipping_preamble = True
@@ -371,112 +394,146 @@ class AnswerGenerator:
         result = "\n".join(filtered_lines).strip()
         return result if result else text.strip()
 
-    # ── Context builder ───────────────────────────────────────────────────────
-
     @staticmethod
     def _build_context(chunks: list[RetrievedChunk]) -> str:
-        """
-        Format retrieved chunks into a numbered context block.
-
-        Example output:
-            [1] Source: file.pdf, Page: 3
-            <chunk text>
-
-            [2] Source: file.pdf, Page: 7
-            <chunk text>
-        """
         parts = []
         for i, rc in enumerate(chunks, start=1):
             header = f"[{i}] Source: {rc.chunk.source}, Page: {rc.chunk.page}"
             parts.append(f"{header}\n{rc.chunk.text}")
         return "\n\n".join(parts)
 
-    # ── LLM callers ───────────────────────────────────────────────────────────
-
-    @staticmethod
-    def _get_key(key_name: str) -> str:
-        """Retrieve API key from module attribute (if monkeypatched), env, or Streamlit secrets."""
+    @classmethod
+    def _get_key(cls, key_name: str, custom_key: str | None = None) -> str:
+        """Retrieve API key from custom BYOK argument, module attribute, env, or Streamlit secrets."""
+        if custom_key:
+            return custom_key.strip()
         mod_val = getattr(sys.modules[__name__], key_name, None)
-        if mod_val is not None:
+        if mod_val is not None and str(mod_val).strip():
             return str(mod_val).strip()
         return get_api_key(key_name)
 
+    @classmethod
+    def get_best_ollama_model(cls) -> str:
+        """
+        Auto-detect the BEST local Ollama model installed on the system.
+        Prioritizes: llama3.3 > llama3.1:70b > llama3.1 > qwen2.5:72b > qwen2.5 > mistral > gemma2.
+        """
+        preferred_models = [
+            "llama3.3:latest",
+            "llama3.3",
+            "llama3.1:70b",
+            "llama3.1:latest",
+            "llama3.1",
+            "qwen2.5:72b",
+            "qwen2.5:latest",
+            "qwen2.5",
+            "mistral:latest",
+            "mistral",
+            "gemma2:latest",
+            "gemma2",
+            "llama3:latest",
+            "llama3",
+        ]
+        try:
+            req = urllib.request.Request("http://localhost:11434/api/tags")
+            with urllib.request.urlopen(req, timeout=2) as response:
+                data = json.loads(response.read().decode("utf-8"))
+                installed = [m.get("name", "") for m in data.get("models", [])]
+
+            logger.info(f"Ollama local models detected: {installed}")
+            for pref in preferred_models:
+                for inst in installed:
+                    if pref == inst or pref.split(":")[0] in inst:
+                        logger.info(f"Selected best Ollama model: '{inst}'")
+                        return inst
+
+            if installed:
+                return installed[0]
+        except Exception as e:
+            logger.warning(f"Could not fetch Ollama local tags: {e}")
+
+        return "llama3.3:latest"
+
     def _init_client(self):
-        """Initialize the appropriate LLM client with auto-detection if configured key is missing."""
+        """Initialize the appropriate LLM client with auto-detection if key is missing."""
         provider = self.provider
 
-        # Auto-detect active provider if requested provider's key is not set
-        if provider == "anthropic" and not self._get_key("ANTHROPIC_API_KEY"):
+        if provider == "groq" and not self._get_key("GROQ_API_KEY", self.custom_api_key):
             provider = self._auto_detect_provider()
-        elif provider == "openai" and not self._get_key("OPENAI_API_KEY"):
+        elif provider == "anthropic" and not self._get_key("ANTHROPIC_API_KEY", self.custom_api_key):
             provider = self._auto_detect_provider()
-        elif provider == "deepseek" and not self._get_key("DEEPSEEK_API_KEY"):
+        elif provider == "openai" and not self._get_key("OPENAI_API_KEY", self.custom_api_key):
             provider = self._auto_detect_provider()
-        elif provider == "openrouter" and not self._get_key("OPENROUTER_API_KEY"):
+        elif provider == "deepseek" and not self._get_key("DEEPSEEK_API_KEY", self.custom_api_key):
             provider = self._auto_detect_provider()
-        elif provider == "gemini" and not self._get_key("GEMINI_API_KEY"):
+        elif provider == "openrouter" and not self._get_key("OPENROUTER_API_KEY", self.custom_api_key):
+            provider = self._auto_detect_provider()
+        elif provider == "gemini" and not self._get_key("GEMINI_API_KEY", self.custom_api_key):
             provider = self._auto_detect_provider()
 
         self.provider = provider
 
-        if self.provider == "anthropic":
-            key = self._get_key("ANTHROPIC_API_KEY")
+        if self.provider == "groq":
+            key = self._get_key("GROQ_API_KEY", self.custom_api_key)
+            if not key:
+                raise OSError("GROQ_API_KEY is not set. Get a free key at https://console.groq.com/keys")
+            try:
+                from openai import OpenAI
+                if not self.model or self.model == generation_config.model or "deepseek" in self.model:
+                    self.model = "llama-3.3-70b-versatile"
+                return OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
+            except ImportError as e:
+                raise ImportError("openai package not found. Run: pip install openai") from e
+
+        elif self.provider == "ollama":
+            best_model = self.get_best_ollama_model()
+            if not self.model or self.model == generation_config.model:
+                self.model = best_model
+            logger.info(f"Initializing Ollama client with model='{self.model}' at http://localhost:11434/v1")
+            try:
+                from openai import OpenAI
+                return OpenAI(api_key="ollama", base_url="http://localhost:11434/v1")
+            except ImportError as e:
+                raise ImportError("openai package not found. Run: pip install openai") from e
+
+        elif self.provider == "anthropic":
+            key = self._get_key("ANTHROPIC_API_KEY", self.custom_api_key)
             if not key:
                 raise OSError("ANTHROPIC_API_KEY environment variable is not set.")
             try:
                 import anthropic
-
                 return anthropic.Anthropic(api_key=key)
             except ImportError as e:
-                raise ImportError(
-                    "anthropic package not found. Run: pip install anthropic"
-                ) from e
+                raise ImportError("anthropic package not found. Run: pip install anthropic") from e
 
         elif self.provider == "openai":
-            key = self._get_key("OPENAI_API_KEY")
+            key = self._get_key("OPENAI_API_KEY", self.custom_api_key)
             if not key:
                 raise OSError("OPENAI_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
-
                 return OpenAI(api_key=key)
             except ImportError as e:
-                raise ImportError(
-                    "openai package not found. Run: pip install openai"
-                ) from e
+                raise ImportError("openai package not found. Run: pip install openai") from e
 
         elif self.provider == "deepseek":
-            key = self._get_key("DEEPSEEK_API_KEY")
+            key = self._get_key("DEEPSEEK_API_KEY", self.custom_api_key)
             if not key:
-                raise OSError(
-                    "DEEPSEEK_API_KEY environment variable is not set. "
-                    "Get a key at https://platform.deepseek.com"
-                )
+                raise OSError("DEEPSEEK_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
-
                 if self.model == generation_config.model or "free" in self.model:
                     self.model = "deepseek-chat"
-
-                return OpenAI(
-                    api_key=key,
-                    base_url="https://api.deepseek.com",
-                )
+                return OpenAI(api_key=key, base_url="https://api.deepseek.com")
             except ImportError as e:
-                raise ImportError(
-                    "openai package not found. Run: pip install openai"
-                ) from e
+                raise ImportError("openai package not found. Run: pip install openai") from e
 
         elif self.provider == "openrouter":
-            key = self._get_key("OPENROUTER_API_KEY")
+            key = self._get_key("OPENROUTER_API_KEY", self.custom_api_key)
             if not key:
-                raise OSError(
-                    "OPENROUTER_API_KEY environment variable is not set. "
-                    "Get a key at https://openrouter.ai/keys"
-                )
+                raise OSError("OPENROUTER_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
-
                 return OpenAI(
                     api_key=key,
                     base_url="https://openrouter.ai/api/v1",
@@ -486,57 +543,56 @@ class AnswerGenerator:
                     },
                 )
             except ImportError as e:
-                raise ImportError(
-                    "openai package not found. Run: pip install openai"
-                ) from e
+                raise ImportError("openai package not found. Run: pip install openai") from e
 
         elif self.provider == "gemini":
-            key = self._get_key("GEMINI_API_KEY")
+            key = self._get_key("GEMINI_API_KEY", self.custom_api_key)
             if not key:
-                raise OSError(
-                    "GEMINI_API_KEY environment variable is not set. "
-                    "Get a key at https://aistudio.google.com/app/apikey"
-                )
+                raise OSError("GEMINI_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
-
                 if self.model == generation_config.model or "free" in self.model:
                     self.model = "gemini-2.0-flash"
-
                 return OpenAI(
                     api_key=key,
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                 )
             except ImportError as e:
-                raise ImportError(
-                    "openai package not found. Run: pip install openai"
-                ) from e
+                raise ImportError("openai package not found. Run: pip install openai") from e
 
         else:
             raise ValueError(
                 f"Unknown provider '{self.provider}'. "
-                "Use 'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'."
+                "Use 'groq', 'ollama', 'anthropic', 'openai', 'deepseek', 'openrouter', or 'gemini'."
             )
 
     @classmethod
     def _auto_detect_provider(cls) -> str:
         """Find the first available API key in environment variables or Streamlit secrets."""
-        if cls._get_key("DEEPSEEK_API_KEY"):
-            logger.info("Auto-detected DEEPSEEK_API_KEY in environment/secrets")
-            return "deepseek"
-        if cls._get_key("OPENROUTER_API_KEY"):
-            logger.info("Auto-detected OPENROUTER_API_KEY in environment/secrets")
-            return "openrouter"
-        if cls._get_key("GEMINI_API_KEY"):
-            logger.info("Auto-detected GEMINI_API_KEY in environment/secrets")
-            return "gemini"
-        if cls._get_key("ANTHROPIC_API_KEY"):
-            logger.info("Auto-detected ANTHROPIC_API_KEY in environment/secrets")
-            return "anthropic"
+        if cls._get_key("GROQ_API_KEY"):
+            logger.info("Auto-detected GROQ_API_KEY in environment/secrets")
+            return "groq"
+
+        # Check if Ollama local server is running
+        try:
+            req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
+            with urllib.request.urlopen(req, timeout=1) as resp:
+                if resp.status == 200:
+                    logger.info("Auto-detected local Ollama server running")
+                    return "ollama"
+        except Exception:
+            pass
+
         if cls._get_key("OPENAI_API_KEY"):
             logger.info("Auto-detected OPENAI_API_KEY in environment/secrets")
             return "openai"
-        return "openrouter"
+        if cls._get_key("ANTHROPIC_API_KEY"):
+            logger.info("Auto-detected ANTHROPIC_API_KEY in environment/secrets")
+            return "anthropic"
+        if cls._get_key("DEEPSEEK_API_KEY"):
+            logger.info("Auto-detected DEEPSEEK_API_KEY in environment/secrets")
+            return "deepseek"
+        return "groq"
 
     def _call_llm(self, prompt: str) -> str:
         """Send prompt to LLM and return response text."""
@@ -545,15 +601,13 @@ class AnswerGenerator:
         try:
             if self.provider == "anthropic":
                 return self._call_anthropic(system_prompt, prompt)
-            elif self.provider in ("openai", "deepseek", "openrouter", "gemini"):
-                # All four use the OpenAI-compatible client
+            elif self.provider in ("groq", "ollama", "openai", "deepseek", "openrouter", "gemini"):
                 return self._call_openai(system_prompt, prompt)
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
             raise RuntimeError(f"LLM generation failed: {e}") from e
 
     def _call_anthropic(self, system: str, user: str) -> str:
-        """Call Anthropic Claude API."""
         response = self._client.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
@@ -564,26 +618,12 @@ class AnswerGenerator:
         return response.content[0].text.strip()
 
     def _call_openai(self, system: str, user: str) -> str:
-        """Call OpenAI Chat Completions API with OpenRouter model fallback resilience."""
-        if any(
-            bad in self.model
-            for bad in (
-                "deepseek/deepseek-r1:free",
-                "google/gemini-2.0-flash-lite",
-                "google/gemini-2.0-pro",
-                "qwen/qwen-2.5",
-                "meta-llama/llama-3.1",
-            )
-        ):
-            self.model = "deepseek/deepseek-chat"
-
         models_to_try = [self.model]
-        if self.provider == "openrouter":
+        if self.provider == "groq":
             fallback_models = [
-                "deepseek/deepseek-chat",
-                "openrouter/free",
-                "google/gemma-4-31b-it:free",
-                "openai/gpt-oss-20b:free",
+                "llama-3.3-70b-versatile",
+                "llama-3.1-8b-instant",
+                "mixtral-8x7b-32768",
             ]
             for fb in fallback_models:
                 if fb not in models_to_try:
@@ -602,7 +642,7 @@ class AnswerGenerator:
                     ],
                 )
                 if m != self.model:
-                    logger.info(f"OpenRouter model fallback succeeded with model '{m}'")
+                    logger.info(f"Model fallback succeeded with model '{m}'")
                 return response.choices[0].message.content.strip()
             except Exception as e:
                 last_error = e
