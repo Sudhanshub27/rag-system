@@ -46,14 +46,11 @@ class CrossEncoderReranker:
                     _shared_reranker_models[model_name] = model_inst
                 self._model = model_inst
                 logger.info("Cross-encoder reranker loaded successfully")
-            except ImportError as e:
-                raise ImportError(
-                    "sentence-transformers is required for reranking. "
-                    "Run: pip install sentence-transformers"
-                ) from e
             except Exception as e:
-                logger.error(f"Failed to load reranker '{model_name}': {e}")
-                raise
+                logger.warning(
+                    f"Reranker model '{model_name}' unavailable ({e}). Graceful degradation enabled."
+                )
+                self._model = None
         else:
             self._model = _shared_reranker_models[model_name]
 
@@ -77,6 +74,8 @@ class CrossEncoderReranker:
         """
         if not retrieved_chunks:
             return []
+        if self._model is None:
+            return retrieved_chunks[: self.top_n]
 
         pairs = [(query, rc.chunk.text) for rc in retrieved_chunks]
 
