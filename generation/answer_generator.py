@@ -5,10 +5,9 @@ Supports Groq, Ollama (Best Local Models), Anthropic, OpenAI, DeepSeek, OpenRout
 Enforces citation-grounded answers, PII anonymization, and detects insufficient-context situations.
 """
 
-import os
+import json
 import sys
 import urllib.request
-import json
 
 from config import (
     generation_config,
@@ -86,7 +85,9 @@ class AnswerGenerator:
         Returns:
             RAGResponse with answer text, citations, and metadata.
         """
-        logger.info(f"Generating answer for query: '{query[:80]}' (provider={self.provider}, anonymize_pii={anonymize_pii})")
+        logger.info(
+            f"Generating answer for query: '{query[:80]}' (provider={self.provider}, anonymize_pii={anonymize_pii})"
+        )
         logger.debug(f"Using {len(retrieved_chunks)} context chunk(s)")
 
         # Guard: empty retrieval
@@ -149,7 +150,10 @@ class AnswerGenerator:
             "context does not contain",
             prompts_config.fallback_response.lower(),
         ]
-        is_fallback = any(kw in cleaned_answer.lower() for kw in fallback_keywords) or len(cleaned_answer.strip()) < 5
+        is_fallback = (
+            any(kw in cleaned_answer.lower() for kw in fallback_keywords)
+            or len(cleaned_answer.strip()) < 5
+        )
 
         if is_fallback:
             cleaned_answer = prompts_config.fallback_response
@@ -160,7 +164,9 @@ class AnswerGenerator:
 
         # Self-RAG ML Evaluation: Faithfulness & Context Relevance
         faithfulness, relevance = (
-            (0.0, 0.0) if is_fallback else self.evaluate_faithfulness_and_relevance(
+            (0.0, 0.0)
+            if is_fallback
+            else self.evaluate_faithfulness_and_relevance(
                 cleaned_answer, query, retrieved_chunks
             )
         )
@@ -458,17 +464,29 @@ class AnswerGenerator:
         """Initialize the appropriate LLM client with auto-detection if key is missing."""
         provider = self.provider
 
-        if provider == "groq" and not self._get_key("GROQ_API_KEY", self.custom_api_key):
+        if provider == "groq" and not self._get_key(
+            "GROQ_API_KEY", self.custom_api_key
+        ):
             provider = self._auto_detect_provider()
-        elif provider == "anthropic" and not self._get_key("ANTHROPIC_API_KEY", self.custom_api_key):
+        elif provider == "anthropic" and not self._get_key(
+            "ANTHROPIC_API_KEY", self.custom_api_key
+        ):
             provider = self._auto_detect_provider()
-        elif provider == "openai" and not self._get_key("OPENAI_API_KEY", self.custom_api_key):
+        elif provider == "openai" and not self._get_key(
+            "OPENAI_API_KEY", self.custom_api_key
+        ):
             provider = self._auto_detect_provider()
-        elif provider == "deepseek" and not self._get_key("DEEPSEEK_API_KEY", self.custom_api_key):
+        elif provider == "deepseek" and not self._get_key(
+            "DEEPSEEK_API_KEY", self.custom_api_key
+        ):
             provider = self._auto_detect_provider()
-        elif provider == "openrouter" and not self._get_key("OPENROUTER_API_KEY", self.custom_api_key):
+        elif provider == "openrouter" and not self._get_key(
+            "OPENROUTER_API_KEY", self.custom_api_key
+        ):
             provider = self._auto_detect_provider()
-        elif provider == "gemini" and not self._get_key("GEMINI_API_KEY", self.custom_api_key):
+        elif provider == "gemini" and not self._get_key(
+            "GEMINI_API_KEY", self.custom_api_key
+        ):
             provider = self._auto_detect_provider()
 
         self.provider = provider
@@ -476,25 +494,39 @@ class AnswerGenerator:
         if self.provider == "groq":
             key = self._get_key("GROQ_API_KEY", self.custom_api_key)
             if not key:
-                raise OSError("GROQ_API_KEY is not set. Get a free key at https://console.groq.com/keys")
+                raise OSError(
+                    "GROQ_API_KEY is not set. Get a free key at https://console.groq.com/keys"
+                )
             try:
                 from openai import OpenAI
-                if not self.model or self.model == generation_config.model or "deepseek" in self.model:
+
+                if (
+                    not self.model
+                    or self.model == generation_config.model
+                    or "deepseek" in self.model
+                ):
                     self.model = "llama-3.3-70b-versatile"
                 return OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
             except ImportError as e:
-                raise ImportError("openai package not found. Run: pip install openai") from e
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
 
         elif self.provider == "ollama":
             best_model = self.get_best_ollama_model()
             if not self.model or self.model == generation_config.model:
                 self.model = best_model
-            logger.info(f"Initializing Ollama client with model='{self.model}' at http://localhost:11434/v1")
+            logger.info(
+                f"Initializing Ollama client with model='{self.model}' at http://localhost:11434/v1"
+            )
             try:
                 from openai import OpenAI
+
                 return OpenAI(api_key="ollama", base_url="http://localhost:11434/v1")
             except ImportError as e:
-                raise ImportError("openai package not found. Run: pip install openai") from e
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
 
         elif self.provider == "anthropic":
             key = self._get_key("ANTHROPIC_API_KEY", self.custom_api_key)
@@ -502,9 +534,12 @@ class AnswerGenerator:
                 raise OSError("ANTHROPIC_API_KEY environment variable is not set.")
             try:
                 import anthropic
+
                 return anthropic.Anthropic(api_key=key)
             except ImportError as e:
-                raise ImportError("anthropic package not found. Run: pip install anthropic") from e
+                raise ImportError(
+                    "anthropic package not found. Run: pip install anthropic"
+                ) from e
 
         elif self.provider == "openai":
             key = self._get_key("OPENAI_API_KEY", self.custom_api_key)
@@ -512,9 +547,12 @@ class AnswerGenerator:
                 raise OSError("OPENAI_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
+
                 return OpenAI(api_key=key)
             except ImportError as e:
-                raise ImportError("openai package not found. Run: pip install openai") from e
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
 
         elif self.provider == "deepseek":
             key = self._get_key("DEEPSEEK_API_KEY", self.custom_api_key)
@@ -522,11 +560,14 @@ class AnswerGenerator:
                 raise OSError("DEEPSEEK_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
+
                 if self.model == generation_config.model or "free" in self.model:
                     self.model = "deepseek-chat"
                 return OpenAI(api_key=key, base_url="https://api.deepseek.com")
             except ImportError as e:
-                raise ImportError("openai package not found. Run: pip install openai") from e
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
 
         elif self.provider == "openrouter":
             key = self._get_key("OPENROUTER_API_KEY", self.custom_api_key)
@@ -534,6 +575,7 @@ class AnswerGenerator:
                 raise OSError("OPENROUTER_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
+
                 return OpenAI(
                     api_key=key,
                     base_url="https://openrouter.ai/api/v1",
@@ -543,7 +585,9 @@ class AnswerGenerator:
                     },
                 )
             except ImportError as e:
-                raise ImportError("openai package not found. Run: pip install openai") from e
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
 
         elif self.provider == "gemini":
             key = self._get_key("GEMINI_API_KEY", self.custom_api_key)
@@ -551,6 +595,7 @@ class AnswerGenerator:
                 raise OSError("GEMINI_API_KEY environment variable is not set.")
             try:
                 from openai import OpenAI
+
                 if self.model == generation_config.model or "free" in self.model:
                     self.model = "gemini-2.0-flash"
                 return OpenAI(
@@ -558,7 +603,9 @@ class AnswerGenerator:
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                 )
             except ImportError as e:
-                raise ImportError("openai package not found. Run: pip install openai") from e
+                raise ImportError(
+                    "openai package not found. Run: pip install openai"
+                ) from e
 
         else:
             raise ValueError(
@@ -575,7 +622,9 @@ class AnswerGenerator:
 
         # Check if Ollama local server is running
         try:
-            req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
+            req = urllib.request.Request(
+                "http://localhost:11434/api/tags", method="GET"
+            )
             with urllib.request.urlopen(req, timeout=1) as resp:
                 if resp.status == 200:
                     logger.info("Auto-detected local Ollama server running")
@@ -601,7 +650,14 @@ class AnswerGenerator:
         try:
             if self.provider == "anthropic":
                 return self._call_anthropic(system_prompt, prompt)
-            elif self.provider in ("groq", "ollama", "openai", "deepseek", "openrouter", "gemini"):
+            elif self.provider in (
+                "groq",
+                "ollama",
+                "openai",
+                "deepseek",
+                "openrouter",
+                "gemini",
+            ):
                 return self._call_openai(system_prompt, prompt)
         except Exception as e:
             logger.error(f"LLM call failed: {e}")

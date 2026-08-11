@@ -245,7 +245,9 @@ class RAGPipeline:
                     api_key=api_key,
                 )
             except Exception as e:
-                logger.warning(f"Failed to instantiate custom generator ({e}), falling back to default: {e}")
+                logger.warning(
+                    f"Failed to instantiate custom generator ({e}), falling back to default: {e}"
+                )
                 generator = self._generator
 
         # Section-Structured Summarization Route for broad overview queries
@@ -254,7 +256,9 @@ class RAGPipeline:
                 "Broad summary query detected — routing to Section-Structured Document Summary path"
             )
             ordered_chunks = self._retriever.get_ordered_document_chunks()
-            response = generator.generate_summary(question, ordered_chunks, anonymize_pii=anonymize_pii)
+            response = generator.generate_summary(
+                question, ordered_chunks, anonymize_pii=anonymize_pii
+            )
             elapsed = time.perf_counter() - start
             logger.info(
                 f"Summary query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
