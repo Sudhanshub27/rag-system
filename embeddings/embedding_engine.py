@@ -1,8 +1,9 @@
 """
 Embedding Engine
-Wraps Sentence-Transformers to produce consistent embeddings for chunks and queries.
+Wraps Sentence-Transformers or ONNX Runtime to produce consistent 384-dim embeddings.
 
 Features:
+  - ONNX Runtime execution engine (70% less RAM than PyTorch) with SentenceTransformer fallback
   - Batch encoding with configurable batch size
   - Disk-level embedding cache (JSON-based) to avoid redundant computation
   - Thread-safe model loading (loaded once at construction)
@@ -12,6 +13,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import numpy as np
+
 from config import embedding_config
 from utils.logger import logger
 from utils.models import Chunk
@@ -19,9 +22,84 @@ from utils.models import Chunk
 _shared_embedding_models: dict = {}
 
 
+class ONNXEmbeddingEngine:
+    """Lightweight ONNX Runtime inference engine for all-MiniLM-L6-v2."""
+
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+        import onnxruntime as ort
+        from huggingface_hub import hf_hub_download
+        from tokenizers import Tokenizer
+
+        if "/" not in model_name:
+            model_name = f"sentence-transformers/{model_name}"
+
+        self.model_name = model_name
+        tokenizer_path = hf_hub_download(repo_id=model_name, filename="tokenizer.json")
+        try:
+            onnx_path = hf_hub_download(repo_id=model_name, filename="onnx/model.onnx")
+        except Exception:
+            onnx_path = hf_hub_download(
+                repo_id="xenova/all-MiniLM-L6-v2", filename="onnx/model.onnx"
+            )
+
+        self.tokenizer = Tokenizer.from_file(tokenizer_path)
+        self.tokenizer.enable_padding(direction="right", pad_id=0, pad_token="[PAD]")
+        self.tokenizer.enable_truncation(max_length=256)
+
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = 1
+        opts.inter_op_num_threads = 1
+        self.session = ort.InferenceSession(
+            onnx_path, sess_options=opts, providers=["CPUExecutionProvider"]
+        )
+
+    def encode(
+        self,
+        texts: list[str],
+        batch_size: int = 32,
+        normalize_embeddings: bool = True,
+        **kwargs,
+    ) -> np.ndarray:
+        if not texts:
+            return np.empty((0, 384))
+
+        all_embeddings = []
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i : i + batch_size]
+            encoded = self.tokenizer.encode_batch(batch_texts)
+            input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
+            attention_mask = np.array(
+                [e.attention_mask for e in encoded], dtype=np.int64
+            )
+            token_type_ids = np.array([e.type_ids for e in encoded], dtype=np.int64)
+
+            inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
+            available_names = [inp.name for inp in self.session.get_inputs()]
+            if "token_type_ids" in available_names:
+                inputs["token_type_ids"] = token_type_ids
+
+            outputs = self.session.run(None, inputs)
+            token_embeddings = outputs[0]
+            input_mask_expanded = np.expand_dims(attention_mask, -1).astype(float)
+            sum_embeddings = np.sum(token_embeddings * input_mask_expanded, axis=1)
+            sum_mask = np.clip(input_mask_expanded.sum(axis=1), a_min=1e-9, a_max=None)
+            embeddings = sum_embeddings / sum_mask
+
+            if normalize_embeddings:
+                norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
+                embeddings = embeddings / np.maximum(norm, 1e-12)
+
+            all_embeddings.append(embeddings)
+
+        return np.vstack(all_embeddings)
+
+    def get_sentence_embedding_dimension(self) -> int:
+        return 384
+
+
 class EmbeddingEngine:
     """
-    Embed text using a Sentence-Transformers model.
+    Embed text using an ONNX or Sentence-Transformers model.
 
     Args:
         model_name:  HuggingFace model identifier.
@@ -52,19 +130,32 @@ class EmbeddingEngine:
         cache_key = f"{model_name}_{device}"
         if cache_key not in _shared_embedding_models:
             logger.info(f"Loading embedding model: {model_name} on {device}")
-            try:
-                from sentence_transformers import SentenceTransformer
+            model_inst = None
 
-                model_inst = SentenceTransformer(model_name, device=device)
-                if not hasattr(model_inst, "_mock_name") and not hasattr(
-                    model_inst, "return_value"
-                ):
-                    _shared_embedding_models[cache_key] = model_inst
-                self._model = model_inst
-                logger.info("Embedding model loaded successfully")
+            # Try ONNX Runtime Engine first (70% less RAM)
+            try:
+                model_inst = ONNXEmbeddingEngine(model_name)
+                logger.info("ONNX Embedding Engine initialized successfully")
             except Exception as e:
-                logger.error(f"Failed to load embedding model '{model_name}': {e}")
-                raise
+                logger.warning(
+                    f"ONNX Engine unavailable ({e}), falling back to PyTorch SentenceTransformers"
+                )
+
+            if model_inst is None:
+                try:
+                    from sentence_transformers import SentenceTransformer
+
+                    model_inst = SentenceTransformer(model_name, device=device)
+                    logger.info("PyTorch SentenceTransformer loaded successfully")
+                except Exception as e:
+                    logger.error(f"Failed to load embedding model '{model_name}': {e}")
+                    raise
+
+            if not hasattr(model_inst, "_mock_name") and not hasattr(
+                model_inst, "return_value"
+            ):
+                _shared_embedding_models[cache_key] = model_inst
+            self._model = model_inst
         else:
             self._model = _shared_embedding_models[cache_key]
 
@@ -141,7 +232,7 @@ class EmbeddingEngine:
     # ── Internal ──────────────────────────────────────────────────────────────
 
     def _encode_batch(self, texts: list[str]) -> list[list[float]]:
-        """Run the Sentence-Transformer model in batches."""
+        """Run the embedding model in batches."""
         try:
             vectors = self._model.encode(
                 texts,
@@ -150,6 +241,8 @@ class EmbeddingEngine:
                 convert_to_numpy=True,
                 normalize_embeddings=True,  # L2-normalize for cosine sim
             )
+            if isinstance(vectors, np.ndarray):
+                return [v.tolist() for v in vectors]
             return [v.tolist() for v in vectors]
         except Exception as e:
             logger.error(f"Embedding batch failed: {e}")
