@@ -10,7 +10,7 @@ import Privacy from './pages/Privacy';
 import RetrievalSettings from './pages/RetrievalSettings';
 import FAQ from './pages/FAQ';
 
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/api' : 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/api' : 'http://localhost:8000/api');
 
 function MainWorkspace() {
   const [tenantId, setTenantId] = useState('');
