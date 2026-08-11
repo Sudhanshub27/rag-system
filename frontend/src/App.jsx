@@ -10,7 +10,21 @@ import Privacy from './pages/Privacy';
 import RetrievalSettings from './pages/RetrievalSettings';
 import FAQ from './pages/FAQ';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '/api' : 'http://localhost:8000/api');
+const getApiBase = () => {
+  let base = import.meta.env.VITE_API_BASE_URL;
+  if (base && base.trim() !== '') {
+    base = base.trim().replace(/\/+$/, '');
+    if (!base.endsWith('/api')) {
+      base = `${base}/api`;
+    }
+    return base;
+  }
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? '/api'
+    : 'http://localhost:8000/api';
+};
+
+const API_BASE = getApiBase();
 
 function MainWorkspace() {
   const [tenantId, setTenantId] = useState('');
