@@ -59,7 +59,10 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run Fast Unit Tests with Coverage
+        env:
+          GROQ_API_KEY: "gsk_dummy_test_key_for_ci_environment"
         run: pytest -m "not integration" --cov=chunking --cov=retrieval --cov=generation --cov-report=term-missing
+
 
   eval:
     name: Quality Evaluation Gating

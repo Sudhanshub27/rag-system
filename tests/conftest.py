@@ -1,7 +1,19 @@
+import os
+
 import pytest
 
 from generation.answer_generator import AnswerGenerator
 from utils.models import Chunk
+
+
+@pytest.fixture(autouse=True)
+def ensure_dummy_api_key(monkeypatch):
+    """Ensure tests run cleanly in headless CI environments without requiring real API keys."""
+    import generation.answer_generator as ag
+
+    if not os.environ.get("GROQ_API_KEY"):
+        monkeypatch.setenv("GROQ_API_KEY", "gsk_dummy_test_key_for_ci_environment")
+        monkeypatch.setattr(ag, "GROQ_API_KEY", "gsk_dummy_test_key_for_ci_environment")
 
 
 @pytest.fixture
