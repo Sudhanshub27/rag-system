@@ -14,6 +14,13 @@ def test_query_router_pattern_match_broad():
     assert router.classify("Give me an overview of the pdf") == QueryIntent.BROAD
     assert router.classify("What is this document about?") == QueryIntent.BROAD
     assert router.classify("Walk me through the main points") == QueryIntent.BROAD
+    assert (
+        router.classify("Can you break down the most important section in detail?")
+        == QueryIntent.BROAD
+    )
+    assert (
+        router.classify("Give me a deep dive into the main topic") == QueryIntent.BROAD
+    )
 
 
 def test_query_router_narrow_queries():

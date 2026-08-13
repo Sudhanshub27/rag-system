@@ -26,7 +26,11 @@ BROAD_PATTERN = re.compile(
     r"explain|summarize|summarise|overview|walk\s+me\s+through|gist|"
     r"entire|whole|all|pitch\s+deck|document\s+summary|pdf\s+summary|"
     r"what\s+is\s+this\s+document\s+about|what\s+is\s+this\s+pdf\s+about|"
-    r"key\s+takeaways|main\_points|table\s+of\s+contents|outline"
+    r"key\s+takeaways|main[_\s]+points|table\s+of\s+contents|outline|"
+    r"break\s+down|breakdown|most\s+important|important\s+section|important\s+part|"
+    r"key\s+section|critical\s+section|main\s+section|core\s+section|deep\s+dive|"
+    r"in\s+detail|detailed\s+breakdown|detailed\s+summary|main\s+topic|main\s+theme|"
+    r"primary\s+focus|executive\s+summary"
     r")\b",
     re.IGNORECASE,
 )

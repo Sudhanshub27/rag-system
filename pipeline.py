@@ -38,7 +38,7 @@ from utils.rate_limiter import rate_limiter
 def is_summary_query(question: str) -> bool:
     """
     Detect broad summary or document overview requests using heuristic matching.
-    Matches queries like 'explain the document', 'summarize', 'give an overview', 'what is this about'.
+    Matches queries like 'explain the document', 'summarize', 'break down the most important section', etc.
     """
     q_lower = question.lower().strip()
     summary_triggers = [
@@ -58,6 +58,17 @@ def is_summary_query(question: str) -> bool:
         "pdf summary",
         "explain the pitch deck",
         "explain pitch deck",
+        "break down",
+        "breakdown",
+        "most important section",
+        "important section",
+        "important part",
+        "key section",
+        "critical section",
+        "deep dive",
+        "main points",
+        "key takeaways",
+        "in detail",
     ]
     return any(trigger in q_lower for trigger in summary_triggers) or q_lower in [
         "summary",
