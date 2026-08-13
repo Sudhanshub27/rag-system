@@ -6,36 +6,40 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml/badge.svg?job=test)](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml)
 
-A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** web application designed for private document intelligence. Features **strict zero data training compliance**, **local PII anonymization**, **Groq free inference**, **Ollama offline LLM support**, **HyDE**, **Multi-Query Expansion**, and **Self-RAG evaluation scoring**.
+A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** web application built with a **FastAPI backend** and **React + Vite frontend**. Designed for private document intelligence, it features **strict multi-tenant data isolation**, **zero data-training compliance**, **local client-side PII anonymization**, **Groq free inference**, **HyDE**, **Multi-Query Expansion**, and **Self-RAG evaluation scoring**.
 
 ---
 
 ## 📋 Table of Contents
 - [✨ Key Features](#-key-features)
 - [🔒 Privacy & Zero-Training Guarantee](#-privacy--zero-training-guarantee)
+- [🏢 Multi-Tenant Isolation Architecture](#-multi-tenant-isolation-architecture)
 - [⚖️ Why RAG vs. Pasting Docs into LLMs](#-why-rag-vs-pasting-documents-into-chatgptclaude)
 - [🧩 Retrieval Architecture & ML Pipeline](#-retrieval-architecture--ml-pipeline)
 - [🧭 Query Routing (Narrow vs Broad)](#-query-routing-narrow-vs-broad)
 - [🔐 Data Handling & Security](#-data-handling--security)
-- [🛡️ Intelligent Fallback & Citation Handling](#️-intelligent-fallback--citation-handling)
+- [📂 Project Structure](#-project-structure)
 - [⚡ Quick Start & Running Locally](#-quick-start--running-locally)
+- [🐳 Docker & Cloud Deployment](#-docker--cloud-deployment)
 - [🔐 Supported LLM Inference Engines](#-supported-llm-inference-engines)
 - [🧪 Testing & CI Compliance](#-testing--ci-compliance)
+- [📝 License](#-license)
 
 ---
-
 
 ## ✨ Key Features
 
 | Category | Capability & Technology Stack | Technical Details |
 |---|---|---|
-| 📂 **1. Ingestion & Docs** | Layout-Aware & Hyperlink Ingestion | Extracts per-page text & embedded hyperlinks via `PyMuPDF` (`fitz`), with `pypdf` fallback. |
-| ✂️ **2. Chunking Strategy** | Semantic Pitch-Deck Chunker | Sentence-boundary aware regex splitting (`250` token size, `15` token min limit to preserve bullet points). |
-| 🗄️ **3. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `ONNX Runtime / SentenceTransformers all-MiniLM-L6-v2` (384-dim) with isolated per-tenant vector collections (`tenant_<id>`). |
-| 🔍 **4. Retrieval Engine** | Hybrid BM25 + Vector Search + Reranker | Combines `rank_bm25` and ChromaDB via RRF fusion + `ms-marco-MiniLM-L-6-v2` cross-encoder reranking. |
-| 🛡️ **5. Privacy Layer** | Built-in Local PII Redaction & Zero-Training APIs | Scrubber sanitizes names, emails, IPs locally by default; routes requests exclusively to contractually zero-training APIs like Groq. |
-| 🤖 **6. LLM Inference** | Groq, OpenAI, Anthropic, DeepSeek, Gemini, OpenRouter | Default: **Groq (Llama 3.3 70B)** for free, zero-training inference; supports Multi-Key Rotation and BYOK (Bring Your Own Key) for free & paid tiers. |
-| 🖥️ **7. Modern Interfaces** | React + Vite UI, FastAPI Backend & Streamlit | Premium Parchment Editorial design UI (`frontend/`), FastAPI SSE streaming endpoints (`api/`), and legacy Streamlit app (`app.py`). |
+| 🖥️ **1. Modern Web Application** | React 18 + Vite & FastAPI SSE Streaming | Parchment Editorial UI (`frontend/`) with real-time SSE progress streaming (`api/routes/upload.py`) & SSE token response generation (`api/routes/query.py`). |
+| 🏢 **2. Multi-Tenant Isolation** | Physical Collection & Cache Isolation | Anonymous `HttpOnly` cookie-based `tenant_id` scopes ChromaDB collections (`tenant_<id>`), BM25 keyword indices, and summary caches. |
+| 📂 **3. Ingestion & Document Processing** | Layout-Aware & Hyperlink Extraction | Page-by-page text & link parsing via `PyMuPDF` (`fitz`), fallback to `pypdf`, handling PDF, TXT, and Markdown files. |
+| ✂️ **4. Chunking Strategy** | Semantic Pitch-Deck Chunker | Sentence-boundary aware regex splitting (`250` token target, `15` token min limit to preserve bullet points and lists). |
+| 🗄️ **5. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `SentenceTransformers all-MiniLM-L6-v2` (384-dim ONNX optimized embeddings) stored in tenant-scoped vector containers. |
+| 🔍 **6. Hybrid Retrieval Engine** | BM25 + Vector Search + Cross-Encoder | Reciprocal Rank Fusion (RRF) combining `rank_bm25` and ChromaDB vector search, reranked via `ms-marco-MiniLM-L-6-v2`. |
+| 🧭 **7. Dual Query Router** | Intent-Driven Processing | Distinguishes specific fact lookups (Narrow) from whole-document overview requests (Broad) using Map-Reduce summarization. |
+| 🛡️ **8. Privacy & PII Scrubbing** | Client-Side Regex Anonymization | Local scrubber sanitizes personal names, email addresses, phone numbers, and IP addresses prior to API payload transmission. |
+| 🤖 **9. LLM Inference Engine** | Groq, OpenAI, Anthropic, DeepSeek, Gemini, OpenRouter | Default: **Groq (Llama 3.3 70B)** for free, zero-training inference; supports Multi-Key Rotation and BYOK (Bring Your Own Key) for free & paid tiers. |
 
 ---
 
@@ -48,6 +52,33 @@ This application enforces a strict privacy-first architecture to ensure **your d
 3. **Multi-Key Rotation & BYOK**: Supports comma-separated API keys (`GROQ_API_KEY=key1,key2,key3`) for rate limit rotation, as well as Bring Your Own Key (BYOK) for any free or paid API key across Groq, OpenAI, Anthropic Claude, DeepSeek, Google Gemini, and OpenRouter.
 4. **No Account / Cookie-Based Multi-Tenancy**: Anonymous `tenant_id` stored in `HttpOnly` browser cookies isolates database vector collections per user session without requesting email or login credentials.
 5. **Data Control**: Delete individual documents or execute a full tenant data wipe with one click.
+
+---
+
+## 🏢 Multi-Tenant Isolation Architecture
+
+The system achieves structural data isolation across multiple concurrent tenants without requiring account creation:
+
+```
+                  ┌─────────────────────────────────────────┐
+                  │          HTTP Request Header            │
+                  │   Cookie: rag_tenant_id = "tenant_123"  │
+                  └────────────────────┬────────────────────┘
+                                       │
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           FastAPI Backend (api/)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  • Vector Store:    ChromaDB Collection -> tenant_tenant_123                │
+│  • Keyword Index:   BM25 Retriever      -> In-Memory tenant_123 Scope        │
+│  • Cache Store:     DocSummarizer       -> summary_tenant_123_{hash}.json   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Per-Tenant Vector Collections**: Every ChromaDB collection is physically isolated under `tenant_{tenant_id}`. A query from Tenant A cannot access document embeddings of Tenant B.
+2. **Per-Tenant BM25 Keyword Indices**: Sparse BM25 keyword search indices are scoped per tenant context.
+3. **Per-Tenant Summary Caches**: Cached document summaries generated during Map-Reduce processing are saved to `.cache/summaries/summary_{tenant_id}_{hash}.json`.
+4. **Instant Multi-Tenant Purging**: Deleting data via `/api/tenant/{tenant_id}` drops the isolated ChromaDB collection, clears the tenant's BM25 index, and removes associated summary caches from disk.
 
 ---
 
@@ -65,9 +96,19 @@ This application enforces a strict privacy-first architecture to ensure **your d
 
 ## 🧩 Retrieval Architecture & ML Pipeline
 
+```
+  Document Upload ──► PyMuPDF Ingestion ──► Semantic Chunker (250 tokens)
+                                                    │
+                                                    ▼
+  User Query ◄── Cross-Encoder Reranker ◄── RRF Fusion ◄── Dense Vector (MiniLM)
+       │                                                      +
+       ▼                                                 Sparse BM25 Keyword
+  Answer Generator ──► SSE Token Stream ──► React Reading Pane + Inspector
+```
+
 1. **Hybrid Retrieval**:
    - **BM25 Keyword Search**: Captures exact terminology, acronyms, product names, and numerical values.
-   - **Dense Vector Search**: Captures semantic intent using `BAAI/bge-base-en-v1.5` embeddings.
+   - **Dense Vector Search**: Captures semantic intent using `all-MiniLM-L6-v2` embeddings.
    - **Reciprocal Rank Fusion (RRF)**: Fuses keyword and vector rankings into a unified score.
    - **Cross-Encoder Reranking**: Re-scores top candidates using `ms-marco-MiniLM-L-6-v2` for precise filtering.
 
@@ -81,106 +122,95 @@ This application enforces a strict privacy-first architecture to ensure **your d
 
 ## 🧭 Query Routing (Narrow vs Broad)
 
-Specific lookup questions ("what is the refund policy?") and whole-document
-questions ("explain this document") need different pipelines. Retrieval-based
-top-k chunking works well for the former and breaks down for the latter, since
-no fixed set of chunks can represent an 80-page document.
+Specific lookup questions ("what is the refund policy?") and whole-document questions ("explain this document") use different execution pipelines.
 
 `retrieval/query_router.py` classifies each query before retrieval runs:
 
-1. **Pattern match** (free) — keywords like *explain / summarize / overview /
-   walk me through* flag a query as broad.
-2. **BM25 score-shape fallback** (free) — if scores are flat across many
-   chunks rather than peaked on a few, the query is broad.
-3. **Model classification** (last resort, cheap call) — only if 1 and 2 are
-   inconclusive.
+1. **Pattern match** (zero cost) — Regex patterns for *explain, summarize, overview, break down, most important section, deep dive* flag a query as `BROAD`.
+2. **BM25 score-shape fallback** (zero cost) — If scores are flat across many chunks rather than peaked on a few, the query is treated as `BROAD`.
+3. **Model classification** (last resort) — Lightweight classification if pattern and score heuristics are ambiguous.
 
-| Query type | Path | Cost |
+| Query Type | Execution Path | LLM Cost |
 |---|---|---|
-| Narrow | `HybridRetriever` → top-N chunks → 1 generation call | 1 call, every time |
-| Broad (cached) | Cached doc-level summary → 1 generation call | 1 call |
-| Broad (first time) | Map-reduce over all chunks → cache → generation call | ~15–20 calls, once per doc |
-
-### Broad-query handling: map-reduce summarization
-
-`generation/doc_summarizer.py` builds a document-level summary once, on the
-first broad query for a given document:
-
-- **Map**: chunks are grouped (~4–5 chunks/group) and each group is
-  summarized in a separate, rate-limited call.
-- **Reduce**: group summaries are combined into a final document summary and
-  section outline.
-- **Cache**: the result is stored keyed by a content hash of the source
-  document (not filename), so any edit to the source automatically
-  invalidates the cached summary.
-- Every subsequent "explain this document" query is served straight from
-  cache — no further generation calls until the source document changes.
-
-API calls are rate-limited (semaphore + backoff honoring `retry-after`) to
-stay within the configured provider's RPM/TPM limits.
+| **Narrow** | `HybridRetriever` → Top-N chunks → Reranker → LLM Answer | 1 generation call |
+| **Broad (Cached)** | `.cache/summaries/summary_{tenant_id}_{hash}.json` | 0ms, 1 generation call |
+| **Broad (First time)** | Parallel Map-Reduce (`ThreadPoolExecutor`) over 12-chunk groups | ~2–4 calls, cached forever |
 
 ---
 
 ## 🔐 Data Handling & Security
 
-This project processes documents via third-party inference APIs
-(Groq / Anthropic / OpenAI, depending on configuration) and, in this
-deployment, is hosted on Oracle Cloud Infrastructure. Data necessarily
-passes through that infrastructure to be processed — no cloud-based
-system can generate an answer without the model reading the input.
-What follows is what actually protects that data, rather than an
-absolute "never leaves the system" claim, which would not be accurate
-for any cloud-connected app.
+This project processes documents via third-party inference APIs (Groq default; OpenAI, Anthropic, Gemini optional) hosted on containerized infrastructure (Docker / Cloud VM).
 
-- **In transit**: all API calls (to the LLM provider, to Oracle-hosted
-  endpoints) use TLS/HTTPS only.
-- **At rest**: documents, chunks, embeddings, and cached summaries stored
-  on Oracle Cloud use encryption at rest (Oracle Object/Block Storage
-  default encryption).
-- **Secrets**: API keys are never committed; local development uses
-  `.env` (see `.env.example`), production deployments should use a
-  secrets manager (e.g. Oracle Vault) rather than plaintext env files.
-- **Cache keys**: cached summaries are keyed by a content hash of the
-  document, not filenames or raw identifiers.
-- **Access control**: Oracle-hosted storage/DB is restricted to the
-  application's network security group; no public inbound access.
-- **Inference provider data use**: per Groq's Services Agreement, inputs
-  and outputs are not used for training/fine-tuning without explicit
-  permission, and are not retained beyond what's needed to serve the
-  request, transient reliability/abuse-monitoring logs (up to 30 days),
-  or legal requirements. Zero Data Retention can be enabled in the
-  provider's console for stricter handling. Equivalent terms apply if
-  configured to use Anthropic or OpenAI instead — check the active
-  provider's current DPA before deploying with sensitive documents.
-
-This is standard "controlled, encrypted, access-restricted, contractually
-bound" data handling — the same model every major cloud and inference
-provider operates under. No provider, including this one, can offer an
-absolute guarantee that data is physically inaccessible to their own
-infrastructure; the guarantee that matters is that access is encrypted,
-logged, audited, and contractually restricted from being used or shared
-beyond serving the request.
-
-
+- **In transit**: All API calls use TLS/HTTPS encryption.
+- **At rest**: Vector databases, embeddings, and caches use disk encryption at rest.
+- **Secrets Management**: API keys are passed via environment variables (`.env` locally, Docker environment in production); keys are never logged or committed.
+- **Access Control**: Multi-tenant session cookies ensure isolated data spaces for concurrent browser sessions.
+- **Inference Provider Terms**: Per Groq's Services Agreement, API inputs/outputs are contractually restricted from being used for AI training or model fine-tuning.
 
 ---
 
-## 🛡️ Intelligent Fallback & Citation Handling
+## 📂 Project Structure
 
-- **Ungrounded Questions**: When a query cannot be answered from your uploaded documents, the system returns a friendly, standardized response:
-  > *"I could not find relevant information in your uploaded documents to answer this question. Please upload a document containing details on this topic or rephrase your query."*
-- **Citation Suppression**: Fallback answers automatically suppress document citations (`citations: []`), avoiding misleading footers when information is missing.
+```
+rag-system/
+├── api/                        # FastAPI Web Backend
+│   ├── main.py                 # FastAPI application entry point
+│   ├── deps.py                 # Dependency injection & multi-tenant session management
+│   └── routes/                 # SSE API endpoints (upload, query, documents, stats)
+├── frontend/                   # React 18 + Vite Frontend App
+│   ├── src/                    # Components (Navbar, Sidebar, ReadingPane, SourceInspector)
+│   ├── index.html              # Main HTML page
+│   ├── vite.config.js          # Vite configuration & API proxy
+│   └── package.json            # Frontend dependencies
+├── ingestion/                  # Document Ingestion Pipeline
+│   ├── pdf_loader.py           # PyMuPDF text & hyperlink parser
+│   └── text_loader.py          # TXT & Markdown parser
+├── chunking/                   # Text Segmentation
+│   └── chunker.py              # Semantic regex pitch-deck chunker
+├── embeddings/                 # Vector Embeddings
+│   └── embedding_engine.py     # SentenceTransformers all-MiniLM-L6-v2 ONNX engine
+├── retrieval/                  # Retrieval Engine
+│   ├── vector_store.py         # Multi-tenant ChromaDB store wrapper
+│   ├── bm25_retriever.py       # Scoped BM25 keyword indexer
+│   ├── hybrid_retriever.py     # RRF Fusion & retrieval orchestrator
+│   ├── reranker.py             # Cross-Encoder candidate reranker
+│   └── query_router.py         # Intent classifier (Narrow vs Broad)
+├── generation/                 # Response Generation
+│   ├── answer_generator.py     # LLM answer generator & SSE stream provider
+│   ├── doc_summarizer.py       # Parallel Map-Reduce cached document summarizer
+│   └── diagram_generator.py    # Mermaid.js diagram generator
+├── evaluation/                 # Evaluation & Benchmarks
+│   ├── evaluate.py             # RAG triad evaluation runner
+│   └── golden_dataset.json     # Ground truth evaluation dataset
+├── utils/                      # Helper Utilities
+│   ├── anonymizer.py           # Local client-side PII regex scrubber
+│   ├── logger.py               # Structured logging system
+│   └── rate_limiter.py         # Provider rate limiter & backoff handler
+├── tests/                      # PyTest Test Suite
+│   ├── unit/                   # Unit tests (isolation, router, chunker, generator)
+│   └── integration/            # End-to-end integration tests
+├── scripts/                    # Automation Scripts
+│   └── ci_check.sh             # Local pre-push CI test script
+├── pipeline.py                 # Main RAGPipeline facade
+├── cli.py                      # Multi-tenant CLI tool
+├── docker-compose.yml          # Multi-container Docker orchestrator
+├── Dockerfile.backend          # Backend FastAPI Dockerfile
+├── Dockerfile.frontend         # Frontend React Vite Dockerfile
+└── run.sh                      # Unified application control runner
+```
 
 ---
 
 ## ⚡ Quick Start & Running Locally
 
-### 1. Clone & Setup Environment
+### 1. Clone & Environment Setup
 
 ```bash
 git clone https://github.com/Sudhanshub27/rag-system.git
 cd rag-system
 
+# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -188,7 +218,7 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment Variables
 
-Copy `.env.example` to `.env` and insert your free Groq API key:
+Copy `.env.example` to `.env` and add your free Groq API key:
 
 ```bash
 cp .env.example .env
@@ -199,7 +229,14 @@ Example `.env`:
 GROQ_API_KEY=gsk_your_free_groq_key_here
 ```
 
-### 3. Launch Development Servers
+### 3. Launch Application
+
+#### Option A: Convenient Unified Script
+```bash
+./run.sh
+```
+
+#### Option B: Manual Local Development
 
 **Backend API (FastAPI)**:
 ```bash
@@ -215,48 +252,88 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
-### 4. Multi-Tenant Usage Examples
+---
 
-Multi-tenant data isolation requires specifying a `tenant_id` on all ingestion and query paths:
+### 4. Multi-Tenant CLI Usage
 
-- **CLI Usage** (pass `--tenant-id` explicitly or set `RAG_TENANT_ID` env var):
-  ```bash
-  # Ingest document under tenant_org_a
-  python cli.py --tenant-id tenant_org_a ingest confidential_report.pdf
+You can also run ingestion and query operations directly from the command line:
 
-  # Query vector store & BM25 index for tenant_org_a
-  python cli.py --tenant-id tenant_org_a query "What is the project budget?"
-  ```
+```bash
+# Ingest document under tenant_org_a
+python cli.py --tenant-id tenant_org_a ingest docs/sample_report.pdf
 
-- **Streamlit Web UI** (isolated per authenticated session):
-  ```bash
-  streamlit run app.py
-  ```
-  *(Enter your Tenant ID in the UI sidebar; session state automatically isolates vector collections, BM25 indices, and summary caches per user).*
+# Query document index for tenant_org_a
+python cli.py --tenant-id tenant_org_a query "What are the Q3 financial results?"
+```
 
+---
+
+## 🐳 Docker & Cloud Deployment
+
+### 1. Docker Compose (Local or Server)
+
+Run both the FastAPI backend and React frontend in containerized isolation:
+
+```bash
+# Build and start all services
+docker-compose up --build -d
+
+# Stop services
+docker-compose down
+```
+
+Services will be available at:
+- **Frontend App**: `http://localhost:5173`
+- **Backend API**: `http://localhost:8000/api`
+
+---
+
+### 2. Oracle Cloud Always Free Tier Deployment
+
+The application is light-weight and optimized to run inside Oracle Cloud's Always Free VM instances (`Ampere A1` 4 ARM vCPUs / 24GB RAM or `E2.1.Micro` 1GB RAM instance):
+
+1. **Provision VM**: Launch an Ubuntu VM on Oracle Cloud Infrastructure.
+2. **Install Docker & Docker Compose**:
+   ```bash
+   sudo apt update && sudo apt install -y docker.io docker-compose
+   ```
+3. **Clone & Configure**:
+   ```bash
+   git clone https://github.com/Sudhanshub27/rag-system.git
+   cd rag-system
+   cp .env.example .env
+   # Edit .env to set your GROQ_API_KEY
+   ```
+4. **Deploy Containers**:
+   ```bash
+   docker-compose up -d --build
+   ```
 
 ---
 
 ## 🔐 Supported LLM Inference Engines
-- **Groq API** — *Default Free Tier (Zero Training Guaranteed)*
-- **OpenAI API** — *Supports All Free & Paid GPT Models*
-- **Anthropic Claude API** — *Supports All Free & Paid Claude Models*
-- **DeepSeek API** — *Supports All DeepSeek Models*
-- **Google Gemini API** — *Supports All Gemini Models*
-- **OpenRouter API** — *Multi-Model Hub for All Open-Source & Closed Models*
+
+The application features a flexible LLM provider architecture with zero-training compliance:
+
+- **Groq API** — *Default Free & Paid Models (Llama 3.3 70B, DeepSeek R1)*
+- **OpenAI API** — *Supports GPT-4o, GPT-4o-mini, GPT-3.5-Turbo*
+- **Anthropic Claude API** — *Supports Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku*
+- **DeepSeek API** — *Supports DeepSeek-V3, DeepSeek-R1*
+- **Google Gemini API** — *Supports Gemini 1.5 Pro, Gemini 1.5 Flash*
+- **OpenRouter API** — *Multi-Model Aggregator for Open & Commercial Models*
 
 ---
 
 ## 🧪 Testing & CI Compliance
 
-Run the automated test suite (35 unit & integration tests):
+Run the automated suite (unit tests, coverage, and linting):
 
 ```bash
-# Run pytest test suite
-.venv/bin/pytest tests/
+# Run automated pre-push checks (Linter + Formatter + PyTest)
+./scripts/ci_check.sh
 
-# Run linter checks
-.venv/bin/ruff check .
+# Or run pytest manually
+.venv/bin/pytest tests/
 ```
 
 ---
