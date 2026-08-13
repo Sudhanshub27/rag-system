@@ -8,6 +8,13 @@ from pathlib import Path
 
 from config import ingestion_config
 from ingestion.base_loader import BaseLoader
+from ingestion.office_loader import (
+    CsvLoader,
+    DocxLoader,
+    ExcelLoader,
+    HtmlLoader,
+    JsonLoader,
+)
 from ingestion.pdf_loader import PDFLoader
 from ingestion.text_loader import MarkdownLoader, TextLoader
 from utils.logger import logger
@@ -28,8 +35,23 @@ class DocumentIngestionPipeline:
     _LOADER_REGISTRY: dict[str, type[BaseLoader]] = {
         ".pdf": PDFLoader,
         ".txt": TextLoader,
+        ".log": TextLoader,
+        ".rst": TextLoader,
+        ".xml": TextLoader,
+        ".yaml": TextLoader,
+        ".yml": TextLoader,
         ".md": MarkdownLoader,
         ".markdown": MarkdownLoader,
+        ".doc": DocxLoader,
+        ".docx": DocxLoader,
+        ".xls": ExcelLoader,
+        ".xlsx": ExcelLoader,
+        ".csv": CsvLoader,
+        ".tsv": CsvLoader,
+        ".json": JsonLoader,
+        ".jsonl": JsonLoader,
+        ".html": HtmlLoader,
+        ".htm": HtmlLoader,
     }
 
     def __init__(self, extra_loaders: dict[str, type[BaseLoader]] | None = None):

@@ -374,7 +374,7 @@ export default function Sidebar({
               <input
                 type="file"
                 multiple
-                accept=".pdf,.txt,.md"
+                accept=".pdf,.txt,.doc,.docx,.csv,.tsv,.xls,.xlsx,.md,.markdown,.json,.jsonl,.html,.htm,.rst,.xml,.yaml,.yml,.log"
                 onChange={handleFileInput}
                 className="hidden"
                 id="sidebar-file-input"
@@ -384,7 +384,7 @@ export default function Sidebar({
                 <div className="text-xs text-charcoal-700">
                   <span className="font-semibold text-terracotta-600">Click to upload</span> or drag files
                 </div>
-                <div className="text-[10px] text-charcoal-500">PDF, TXT, Markdown</div>
+                <div className="text-[10px] text-charcoal-500">PDF, Word, Excel, CSV, JSON, MD, TXT</div>
               </label>
             </div>
             <UploadProgress fileProgress={fileProgress} />
