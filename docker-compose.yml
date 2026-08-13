@@ -10,6 +10,7 @@ services:
       - .:/app
       - chroma_data:/app/chroma_db
     environment:
+      - FRONTEND_URL=${FRONTEND_URL}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
