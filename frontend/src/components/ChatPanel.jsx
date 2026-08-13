@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Copy, Check, Download, AlertCircle, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { markdownToPlainText } from '../utils/format';
 
 export default function ChatPanel({
   messages,
@@ -30,7 +31,8 @@ export default function ChatPanel({
   };
 
   const handleCopy = (text, id) => {
-    navigator.clipboard.writeText(text);
+    const plainText = markdownToPlainText(text);
+    navigator.clipboard.writeText(plainText);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };

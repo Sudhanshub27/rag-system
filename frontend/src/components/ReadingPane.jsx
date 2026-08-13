@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import QuestionBar from './QuestionBar';
 import { deduplicateCitations, findCitationById } from '../utils/citations';
+import { markdownToPlainText } from '../utils/format';
 
 // Inline Hover Citation Popover Component
 function CitationMarker({ num, citations, onSelectCitation, debugScores }) {
@@ -112,7 +113,8 @@ export default function ReadingPane({
   }, [messages, currentStreamText]);
 
   const handleCopy = (text, id) => {
-    navigator.clipboard.writeText(text);
+    const plainText = markdownToPlainText(text);
+    navigator.clipboard.writeText(plainText);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
