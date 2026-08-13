@@ -17,7 +17,7 @@ export default function HowItWorks() {
     {
       num: '01',
       title: 'Upload & Parse Documents',
-      desc: 'Upload PDFs, text files, or notes. The system extracts every page, paragraph, and table while preserving exact page markers and embedded links.',
+      desc: 'Upload PDFs, Word (.docx), Excel (.xlsx), CSV, JSON, Markdown, or plain text files. The system extracts text, paragraphs, tables, and sheets while preserving exact page markers and embedded data structures.',
       icon: FileText,
     },
     {

@@ -1,7 +1,62 @@
 import React from 'react';
-import { HelpCircle, FileText, Cookie, HardDrive, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react';
+import {
+  HelpCircle,
+  FileText,
+  Cookie,
+  HardDrive,
+  Smartphone,
+  CheckCircle,
+  ShieldCheck,
+  FileSpreadsheet,
+  Code,
+  FileCode,
+  FileBox,
+} from 'lucide-react';
 
 export default function FAQ() {
+  const fileCategories = [
+    {
+      title: 'Documents',
+      icon: FileText,
+      formats: [
+        { name: 'PDF Document', ext: '.pdf' },
+        { name: 'Microsoft Word', ext: '.docx' },
+        { name: 'Legacy Word', ext: '.doc' },
+      ],
+    },
+    {
+      title: 'Spreadsheets & Tabular',
+      icon: FileSpreadsheet,
+      formats: [
+        { name: 'Microsoft Excel', ext: '.xlsx' },
+        { name: 'Legacy Excel', ext: '.xls' },
+        { name: 'CSV File', ext: '.csv' },
+        { name: 'TSV File', ext: '.tsv' },
+      ],
+    },
+    {
+      title: 'Structured & Data',
+      icon: Code,
+      formats: [
+        { name: 'JSON Object', ext: '.json' },
+        { name: 'JSON Lines', ext: '.jsonl' },
+        { name: 'XML Data', ext: '.xml' },
+        { name: 'YAML Config', ext: '.yaml, .yml' },
+      ],
+    },
+    {
+      title: 'Text, Web & Code',
+      icon: FileCode,
+      formats: [
+        { name: 'Plain Text', ext: '.txt' },
+        { name: 'Markdown', ext: '.md, .markdown' },
+        { name: 'reStructuredText', ext: '.rst' },
+        { name: 'Web HTML', ext: '.html, .htm' },
+        { name: 'Log Files', ext: '.log' },
+      ],
+    },
+  ];
+
   const faqs = [
     {
       q: 'Which LLM providers are supported, and is my data ever used for training?',
@@ -20,8 +75,8 @@ export default function FAQ() {
     },
     {
       q: 'What file types are supported?',
-      a: 'PDF (.pdf), Plain Text (.txt), and Markdown (.md).',
-      icon: FileText,
+      isStructuredFormats: true,
+      icon: FileBox,
     },
     {
       q: 'What happens if I clear my cookies?',
@@ -30,7 +85,7 @@ export default function FAQ() {
     },
     {
       q: 'Is there a limit on document size or number of documents?',
-      a: 'Supported up to 25MB per file. There is no strict limit on the number of documents you can upload into your private knowledge base.',
+      a: 'Supported up to 100MB per file. There is no strict limit on the number of documents you can upload into your private knowledge base.',
       icon: HardDrive,
     },
     {
@@ -63,15 +118,53 @@ export default function FAQ() {
             return (
               <div
                 key={index}
-                className="p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-sm space-y-2"
+                className="p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-xs space-y-3"
               >
                 <h3 className="font-serif font-bold text-lg text-charcoal-900 flex items-center gap-2.5">
                   <Icon className="w-5 h-5 text-terracotta-600 shrink-0" />
                   <span>{item.q}</span>
                 </h3>
-                <p className="text-charcoal-700 leading-relaxed font-sans pl-7 flex-1">
-                  {item.a}
-                </p>
+
+                {item.isStructuredFormats ? (
+                  <div className="pl-7 space-y-4 pt-1">
+                    <p className="text-xs text-charcoal-700 font-sans leading-relaxed">
+                      We support <strong>19 distinct file formats</strong> across documents, spreadsheets, structured data, and code markup. All formats are automatically parsed, chunked, and indexed with equal retrieval accuracy:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {fileCategories.map((cat, cIdx) => {
+                        const CatIcon = cat.icon;
+                        return (
+                          <div
+                            key={cIdx}
+                            className="p-3.5 rounded-lg bg-parchment-100/70 border border-warmborder/80 space-y-2"
+                          >
+                            <div className="flex items-center gap-2 font-serif font-bold text-xs text-charcoal-900 border-b border-warmborder/60 pb-1.5">
+                              <CatIcon className="w-4 h-4 text-terracotta-600 shrink-0" />
+                              <span>{cat.title}</span>
+                            </div>
+                            <div className="space-y-1.5 pt-1">
+                              {cat.formats.map((fmt, fIdx) => (
+                                <div
+                                  key={fIdx}
+                                  className="flex items-center justify-between text-xs text-charcoal-800"
+                                >
+                                  <span>{fmt.name}</span>
+                                  <code className="px-1.5 py-0.5 rounded bg-parchment-200 text-charcoal-900 font-mono text-[11px] font-semibold border border-warmborder">
+                                    {fmt.ext}
+                                  </code>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-charcoal-700 leading-relaxed font-sans pl-7 flex-1">
+                    {item.a}
+                  </p>
+                )}
               </div>
             );
           })}
