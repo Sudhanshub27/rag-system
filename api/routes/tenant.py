@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from api.deps import get_pipeline, get_tenant_id
+from utils.rate_limiter import rate_limiter
 
 router = APIRouter(prefix="/api", tags=["tenant"])
 
@@ -8,18 +9,20 @@ router = APIRouter(prefix="/api", tags=["tenant"])
 @router.get("/stats")
 async def get_stats(tenant_id: str = Depends(get_tenant_id)):
     """
-    Get vector store and knowledge base statistics for the current tenant.
+    Get vector store and knowledge base statistics for the current tenant, along with API rate limit usage.
     """
     pipeline = get_pipeline(tenant_id)
     stats = pipeline.get_stats()
     all_chunks = pipeline.get_all_chunks()
     unique_sources = len(set(c.source for c in all_chunks))
+    usage = rate_limiter.get_user_usage(tenant_id)
 
     return {
         "tenant_id": tenant_id,
         "total_chunks": stats.get("total_chunks_in_vector_store", 0),
         "total_documents": unique_sources,
         "embedding_model": stats.get("embedding_model", ""),
+        "rate_limits": usage,
     }
 
 

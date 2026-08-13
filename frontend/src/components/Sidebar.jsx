@@ -303,6 +303,14 @@ export default function Sidebar({
                 {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
+
+            {/* Live API Rate Limit & Protection Indicator */}
+            <div className="pt-1 flex items-center justify-between text-[10px] text-charcoal-500 font-sans">
+              <span className="flex items-center gap-1 font-mono text-[10px] text-terracotta-600 font-semibold">
+                <ShieldCheck className="w-3 h-3 text-terracotta-600 shrink-0" /> Quota Shield: 6 req/min • 50 req/hr
+              </span>
+              <span className="text-sage-600 font-semibold">Active</span>
+            </div>
           </div>
 
           {/* Pipeline Options */}
