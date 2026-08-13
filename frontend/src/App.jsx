@@ -132,6 +132,9 @@ function MainWorkspace() {
         }
       }
       await refreshData();
+      setTimeout(() => {
+        setFileProgress({});
+      }, 3500);
     } catch (err) {
       setError(err.message);
     }

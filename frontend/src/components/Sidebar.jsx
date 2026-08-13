@@ -24,27 +24,44 @@ function UploadProgress({ fileProgress }) {
   return (
     <div className="space-y-2 mt-2">
       {fileEntries.map(([filename, data]) => {
-        let percent = 0;
-        let label = 'Processing...';
+        let percent = data.progress || 0;
+        let label = data.message || 'Processing...';
 
-        if (data.event === 'chunking') {
-          percent = 40;
-          label = 'Chunking text...';
-        } else if (data.event === 'embedding') {
-          percent = 70;
-          label = 'Generating embeddings...';
-        } else if (data.event === 'completed') {
-          percent = 100;
-          label = 'Indexed!';
-        } else if (data.event === 'error') {
+        const isComplete =
+          data.event === 'complete' ||
+          data.event === 'completed' ||
+          data.stage === 'complete' ||
+          percent === 100;
+        const isError = data.event === 'error' || data.stage === 'error';
+        const isIndexing = data.event === 'indexing' || data.stage === 'indexing';
+        const isEmbedding = data.event === 'embedding' || data.stage === 'embedding';
+        const isChunking = data.event === 'chunking' || data.stage === 'chunking';
+
+        if (isError) {
           return (
             <div
               key={filename}
               className="text-xs p-2 bg-red-100/60 border border-red-300 text-red-800 rounded font-sans"
             >
-              <strong>{filename}:</strong> {data.message || 'Upload failed'}
+              <strong>{filename}:</strong> {data.error || data.message || 'Upload failed'}
             </div>
           );
+        }
+
+        if (isComplete) {
+          percent = 100;
+          label = data.chunks_added
+            ? `Indexed! (${data.chunks_added} chunks)`
+            : 'Indexed & Ready!';
+        } else if (isIndexing) {
+          percent = 85;
+          label = 'Storing in ChromaDB...';
+        } else if (isEmbedding) {
+          percent = 60;
+          label = 'Generating embeddings...';
+        } else if (isChunking) {
+          percent = 25;
+          label = 'Chunking text...';
         }
 
         return (
@@ -53,16 +70,30 @@ function UploadProgress({ fileProgress }) {
             className="p-2 bg-parchment-50 border border-warmborder rounded text-xs space-y-1 font-sans shadow-2xs"
           >
             <div className="flex justify-between items-center text-charcoal-900 font-medium">
-              <span className="truncate max-w-[140px] font-sans">{filename}</span>
-              <span className="text-[10px] text-terracotta-600 font-semibold">{percent}%</span>
+              <span className="truncate max-w-[140px] font-sans" title={filename}>{filename}</span>
+              <span
+                className={`text-[10px] font-semibold ${
+                  isComplete ? 'text-sage-700 font-bold' : 'text-terracotta-600'
+                }`}
+              >
+                {isComplete ? '100% ✓' : `${percent}%`}
+              </span>
             </div>
             <div className="w-full bg-parchment-200 h-1.5 rounded-full overflow-hidden">
               <div
-                className="bg-terracotta-600 h-full transition-all duration-300 rounded-full"
+                className={`h-full transition-all duration-300 rounded-full ${
+                  isComplete ? 'bg-sage-600' : 'bg-terracotta-600'
+                }`}
                 style={{ width: `${percent}%` }}
               ></div>
             </div>
-            <div className="text-[10px] text-charcoal-500 italic">{label}</div>
+            <div
+              className={`text-[10px] italic ${
+                isComplete ? 'text-sage-700 font-semibold not-italic' : 'text-charcoal-500'
+              }`}
+            >
+              {label}
+            </div>
           </div>
         );
       })}
