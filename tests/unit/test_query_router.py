@@ -34,12 +34,15 @@ def test_query_router_bm25_score_flatness_broad():
     assert intent == QueryIntent.BROAD
 
 
-def test_query_router_bm25_score_peaked_narrow():
-    router = QueryRouter(bm25_flatness_threshold=1.5)
+def test_query_router_empty_and_exception_handling():
+    router = QueryRouter()
+    assert router.classify("") == QueryIntent.NARROW
+    assert router.classify("   ") == QueryIntent.NARROW
+
     mock_bm25 = MagicMock()
     mock_bm25.corpus_size = 10
-    # Peaked score distribution: top_score = 12.0, top_5_mean = 3.0 -> ratio 4.0 > 1.5
-    mock_bm25.get_scores.return_value = [12.0, 3.0, 1.0, 0.5, 0.1, 0.0, 0.0]
+    mock_bm25.get_scores.side_effect = Exception("BM25 error")
 
-    intent = router.classify("specific keyword query", bm25_retriever=mock_bm25)
+    # Should safely fallback to NARROW without crashing on exception
+    intent = router.classify("some query", bm25_retriever=mock_bm25)
     assert intent == QueryIntent.NARROW
