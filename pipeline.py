@@ -15,7 +15,7 @@ import time
 from chunking import SemanticChunker
 from config import retrieval_config
 from embeddings import EmbeddingEngine
-from generation import AnswerGenerator
+from generation import AnswerGenerator, doc_summarizer
 from generation.diagram_generator import (
     DiagramGenerator,
     DiagramResponse,
@@ -27,6 +27,8 @@ from retrieval import (
     ChromaVectorStore,
     CrossEncoderReranker,
     HybridRetriever,
+    QueryIntent,
+    QueryRouter,
 )
 from utils.logger import logger
 from utils.models import Chunk, RAGResponse
@@ -124,6 +126,7 @@ class RAGPipeline:
 
         self._generator = AnswerGenerator()
         self._diagram_generator = DiagramGenerator()
+        self._query_router = QueryRouter()
 
         logger.info(
             f"RAG Pipeline ready for tenant_id='{eff_tenant}' — {len(self._all_chunks)} chunk(s) indexed"
@@ -250,18 +253,34 @@ class RAGPipeline:
                 )
                 generator = self._generator
 
-        # Section-Structured Summarization Route for broad overview queries
-        if is_summary_query(question):
+        # Query Intent Classification (NARROW vs BROAD)
+        intent = self._query_router.classify(
+            question, bm25_retriever=self._bm25, generator=generator
+        )
+
+        if intent == QueryIntent.BROAD or is_summary_query(question):
             logger.info(
-                "Broad summary query detected — routing to Section-Structured Document Summary path"
+                f"Broad summary query detected (intent={intent}) — routing to Cached Document Summarizer path"
             )
-            ordered_chunks = self._retriever.get_ordered_document_chunks()
+            # Retrieve or build cached document summary
+            doc_summary_text = doc_summarizer.get_or_build_doc_summary(
+                self._all_chunks, generator=generator
+            )
+            summary_chunk = Chunk(
+                text=doc_summary_text,
+                source="cached_doc_summary",
+                chunk_id="doc_summary_cached",
+                page=1,
+            )
+            ordered_chunks = self._retriever.get_ordered_document_chunks() or [
+                summary_chunk
+            ]
             response = generator.generate_summary(
                 question, ordered_chunks, anonymize_pii=anonymize_pii
             )
             elapsed = time.perf_counter() - start
             logger.info(
-                f"Summary query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
+                f"Broad summary query answered in {elapsed:.2f}s | fallback={response.is_fallback}"
             )
             return response
 

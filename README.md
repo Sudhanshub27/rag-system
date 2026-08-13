@@ -15,13 +15,15 @@ A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** we
 - [🔒 Privacy & Zero-Training Guarantee](#-privacy--zero-training-guarantee)
 - [⚖️ Why RAG vs. Pasting Docs into LLMs](#-why-rag-vs-pasting-documents-into-chatgptclaude)
 - [🧩 Retrieval Architecture & ML Pipeline](#-retrieval-architecture--ml-pipeline)
+- [🧭 Query Routing (Narrow vs Broad)](#-query-routing-narrow-vs-broad)
+- [🔐 Data Handling & Security](#-data-handling--security)
 - [🛡️ Intelligent Fallback & Citation Handling](#️-intelligent-fallback--citation-handling)
 - [⚡ Quick Start & Running Locally](#-quick-start--running-locally)
 - [🔐 Supported LLM Inference Engines](#-supported-llm-inference-engines)
-- [⚙️ Environment Variables & Setup](#️-environment-variables--setup)
 - [🧪 Testing & CI Compliance](#-testing--ci-compliance)
 
 ---
+
 
 ## ✨ Key Features
 
@@ -65,7 +67,7 @@ This application enforces a strict privacy-first architecture to ensure **your d
 
 1. **Hybrid Retrieval**:
    - **BM25 Keyword Search**: Captures exact terminology, acronyms, product names, and numerical values.
-   - **Dense Vector Search**: Captures semantic intent using `all-MiniLM-L6-v2` embeddings.
+   - **Dense Vector Search**: Captures semantic intent using `BAAI/bge-base-en-v1.5` embeddings.
    - **Reciprocal Rank Fusion (RRF)**: Fuses keyword and vector rankings into a unified score.
    - **Cross-Encoder Reranking**: Re-scores top candidates using `ms-marco-MiniLM-L-6-v2` for precise filtering.
 
@@ -74,6 +76,92 @@ This application enforces a strict privacy-first architecture to ensure **your d
 
 3. **Multi-Query Expansion**:
    - Reformulates questions into semantic variations to maximize retrieval recall.
+
+---
+
+## 🧭 Query Routing (Narrow vs Broad)
+
+Specific lookup questions ("what is the refund policy?") and whole-document
+questions ("explain this document") need different pipelines. Retrieval-based
+top-k chunking works well for the former and breaks down for the latter, since
+no fixed set of chunks can represent an 80-page document.
+
+`retrieval/query_router.py` classifies each query before retrieval runs:
+
+1. **Pattern match** (free) — keywords like *explain / summarize / overview /
+   walk me through* flag a query as broad.
+2. **BM25 score-shape fallback** (free) — if scores are flat across many
+   chunks rather than peaked on a few, the query is broad.
+3. **Model classification** (last resort, cheap call) — only if 1 and 2 are
+   inconclusive.
+
+| Query type | Path | Cost |
+|---|---|---|
+| Narrow | `HybridRetriever` → top-N chunks → 1 generation call | 1 call, every time |
+| Broad (cached) | Cached doc-level summary → 1 generation call | 1 call |
+| Broad (first time) | Map-reduce over all chunks → cache → generation call | ~15–20 calls, once per doc |
+
+### Broad-query handling: map-reduce summarization
+
+`generation/doc_summarizer.py` builds a document-level summary once, on the
+first broad query for a given document:
+
+- **Map**: chunks are grouped (~4–5 chunks/group) and each group is
+  summarized in a separate, rate-limited call.
+- **Reduce**: group summaries are combined into a final document summary and
+  section outline.
+- **Cache**: the result is stored keyed by a content hash of the source
+  document (not filename), so any edit to the source automatically
+  invalidates the cached summary.
+- Every subsequent "explain this document" query is served straight from
+  cache — no further generation calls until the source document changes.
+
+API calls are rate-limited (semaphore + backoff honoring `retry-after`) to
+stay within the configured provider's RPM/TPM limits.
+
+---
+
+## 🔐 Data Handling & Security
+
+This project processes documents via third-party inference APIs
+(Groq / Anthropic / OpenAI, depending on configuration) and, in this
+deployment, is hosted on Oracle Cloud Infrastructure. Data necessarily
+passes through that infrastructure to be processed — no cloud-based
+system can generate an answer without the model reading the input.
+What follows is what actually protects that data, rather than an
+absolute "never leaves the system" claim, which would not be accurate
+for any cloud-connected app.
+
+- **In transit**: all API calls (to the LLM provider, to Oracle-hosted
+  endpoints) use TLS/HTTPS only.
+- **At rest**: documents, chunks, embeddings, and cached summaries stored
+  on Oracle Cloud use encryption at rest (Oracle Object/Block Storage
+  default encryption).
+- **Secrets**: API keys are never committed; local development uses
+  `.env` (see `.env.example`), production deployments should use a
+  secrets manager (e.g. Oracle Vault) rather than plaintext env files.
+- **Cache keys**: cached summaries are keyed by a content hash of the
+  document, not filenames or raw identifiers.
+- **Access control**: Oracle-hosted storage/DB is restricted to the
+  application's network security group; no public inbound access.
+- **Inference provider data use**: per Groq's Services Agreement, inputs
+  and outputs are not used for training/fine-tuning without explicit
+  permission, and are not retained beyond what's needed to serve the
+  request, transient reliability/abuse-monitoring logs (up to 30 days),
+  or legal requirements. Zero Data Retention can be enabled in the
+  provider's console for stricter handling. Equivalent terms apply if
+  configured to use Anthropic or OpenAI instead — check the active
+  provider's current DPA before deploying with sensitive documents.
+
+This is standard "controlled, encrypted, access-restricted, contractually
+bound" data handling — the same model every major cloud and inference
+provider operates under. No provider, including this one, can offer an
+absolute guarantee that data is physically inaccessible to their own
+infrastructure; the guarantee that matters is that access is encrypted,
+logged, audited, and contractually restricted from being used or shared
+beyond serving the request.
+
+
 
 ---
 
