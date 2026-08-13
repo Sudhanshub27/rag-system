@@ -366,7 +366,6 @@ export default function Sidebar({
           <div className="space-y-1.5">
             <div className="text-[11px] font-semibold text-charcoal-500 uppercase tracking-wider font-sans flex justify-between items-center">
               <span>Upload Documents</span>
-              <span className="text-[10px] text-charcoal-500 font-mono">{stats.total_documents || 0} Docs • {stats.total_chunks || 0} Chunks</span>
             </div>
             <div
               onDragEnter={handleDrag}
@@ -396,6 +395,22 @@ export default function Sidebar({
               </label>
             </div>
             <UploadProgress fileProgress={fileProgress} />
+          </div>
+
+          {/* Knowledge Index Statistics Banner (Parchment Theme) */}
+          <div className="p-2.5 bg-parchment-50 border border-warmborder rounded-lg shadow-2xs flex items-center justify-between font-sans">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-charcoal-700">
+              <Cpu className="w-3.5 h-3.5 text-terracotta-600 shrink-0" />
+              <span>Knowledge Index</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[11px]">
+              <span className="px-2 py-0.5 rounded bg-parchment-200 text-charcoal-900 font-semibold border border-warmborder/80">
+                {stats.total_documents ?? documents.length ?? 0} Docs
+              </span>
+              <span className="px-2 py-0.5 rounded bg-terracotta-100 text-terracotta-700 font-bold border border-terracotta-600/30">
+                {stats.total_chunks ?? 0} Chunks
+              </span>
+            </div>
           </div>
 
           {/* Indexed Documents List */}
