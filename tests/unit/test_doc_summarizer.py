@@ -45,7 +45,7 @@ def test_doc_summarizer_multi_chunk_map_reduce(tmp_path):
             chunk_id=f"c{i}",
             page=i,
         )
-        for i in range(1, 10)  # 9 chunks triggers Map-Reduce loop (>5 chunks)
+        for i in range(1, 26)  # 25 chunks triggers Map-Reduce loop (>12 chunks)
     ]
 
     mock_generator = MagicMock()
@@ -57,7 +57,7 @@ def test_doc_summarizer_multi_chunk_map_reduce(tmp_path):
         chunks, mock_generator, tenant_id="test_tenant"
     )
     assert len(summary) > 0
-    # MAP step (3 batches of ~4 chunks) + REDUCE step (1 call) = 4 calls total
+    # MAP step (3 batches of 12 chunks) + REDUCE step (1 call) = 4 calls total
     assert mock_generator.generate_summary_raw.call_count == 4
 
 

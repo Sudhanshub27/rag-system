@@ -13,6 +13,7 @@ import hashlib
 import json
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +27,7 @@ DEFAULT_CACHE_DIR = Path(".cache/summaries")
 class RateLimiterSemaphore:
     """Semaphore wrapper to enforce rate limits across map-reduce LLM calls."""
 
-    def __init__(self, max_concurrent: int = 2, min_delay_seconds: float = 0.5):
+    def __init__(self, max_concurrent: int = 4, min_delay_seconds: float = 0.1):
         self._semaphore = threading.Semaphore(max_concurrent)
         self.min_delay_seconds = min_delay_seconds
         self._last_call_time = 0.0
@@ -46,7 +47,7 @@ class RateLimiterSemaphore:
 
 
 # Global rate limiter instance for map-reduce summarization
-_summarizer_rate_limiter = RateLimiterSemaphore(max_concurrent=2, min_delay_seconds=0.6)
+_summarizer_rate_limiter = RateLimiterSemaphore(max_concurrent=4, min_delay_seconds=0.1)
 
 
 def compute_content_hash(chunks: list[Chunk]) -> str:
@@ -106,7 +107,7 @@ class DocumentSummarizer:
 
         logger.info(
             f"DocSummarizer: Cache MISS for content hash {doc_hash[:10]}... "
-            f"Building Map-Reduce summary across {len(chunks)} chunks."
+            f"Building fast Map-Reduce summary across {len(chunks)} chunks."
         )
 
         # Build Map-Reduce summary
@@ -134,10 +135,10 @@ class DocumentSummarizer:
 
     def _map_reduce_summarize(self, chunks: list[Chunk], generator: Any) -> str:
         """
-        Execute Map-Reduce summarization over chunks.
+        Execute parallel Map-Reduce summarization over chunks.
         """
-        # Single batch fallback for small documents (< 6 chunks)
-        if len(chunks) <= 5:
+        # Single batch processing for documents up to 12 chunks (fast 1-call path)
+        if len(chunks) <= 12:
             context = "\n\n".join(
                 f"[Chunk {i+1}] {c.text}" for i, c in enumerate(chunks)
             )
@@ -147,24 +148,38 @@ class DocumentSummarizer:
             )
             return self._rate_limited_generate(generator, prompt)
 
-        # MAP step: Group chunks into batches of ~4 chunks
-        group_size = 4
+        # MAP step: Group chunks into larger batches of 12 chunks (~3000 tokens)
+        group_size = 12
         grouped_chunks = [
             chunks[i : i + group_size] for i in range(0, len(chunks), group_size)
         ]
-        group_summaries: list[str] = []
 
         logger.info(
-            f"DocSummarizer MAP step: Processing {len(grouped_chunks)} chunk groups..."
+            f"DocSummarizer MAP step: Parallel processing {len(grouped_chunks)} chunk groups..."
         )
-        for idx, group in enumerate(grouped_chunks, start=1):
+
+        def _process_group(idx: int, group: list[Chunk]) -> tuple[int, str]:
             group_context = "\n\n".join(c.text for c in group)
             map_prompt = (
                 f"Summarize key points and topics in section {idx}/{len(grouped_chunks)} of the document:\n\n"
                 f"{group_context}\n\nSection Key Points:"
             )
-            group_summary = self._rate_limited_generate(generator, map_prompt)
-            group_summaries.append(f"### Section {idx}\n{group_summary}")
+            summary_text = self._rate_limited_generate(generator, map_prompt)
+            return idx, f"### Section {idx}\n{summary_text}"
+
+        results_dict = {}
+        max_workers = min(4, len(grouped_chunks))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_idx = {
+                executor.submit(_process_group, idx, group): idx
+                for idx, group in enumerate(grouped_chunks, start=1)
+            }
+            for future in as_completed(future_to_idx):
+                idx, result = future.result()
+                results_dict[idx] = result
+
+        # Re-order group summaries by section index
+        group_summaries = [results_dict[i] for i in sorted(results_dict.keys())]
 
         # REDUCE step: Combine group summaries into final summary and outline
         combined_summaries = "\n\n".join(group_summaries)
