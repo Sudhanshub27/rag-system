@@ -9,10 +9,10 @@ version: "1.0.0"
 # Embedding settings
 # ---------------------
 embeddings:
-  model_name: "all-MiniLM-L6-v2"   # Sentence-Transformers model
-  device: "cpu"                      # "cpu" or "cuda"
+  model_name: "BAAI/bge-base-en-v1.5"   # High-accuracy PyTorch Sentence-Transformers model
+  device: "cpu"                           # "cpu" or "cuda"
   batch_size: 32
-  cache_dir: ".cache/embeddings"     # Local embedding cache
+  cache_dir: ".cache/embeddings"          # Local embedding cache
 
 # ---------------------
 # Chunking settings
@@ -40,7 +40,8 @@ retrieval:
   bm25_weight: 0.3         # Weight for BM25 scores in fusion
   vector_weight: 0.7       # Weight for vector scores in fusion
   reranker_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
-  use_reranker: false      # Set to true after first run (downloads ~85MB cross-encoder)
+  use_reranker: true       # 2-stage Cross-Encoder precision reranking enabled
+
 
 # ---------------------
 # LLM (Generation)

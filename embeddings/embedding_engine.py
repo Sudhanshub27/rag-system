@@ -132,21 +132,23 @@ class EmbeddingEngine:
             logger.info(f"Loading embedding model: {model_name} on {device}")
             model_inst = None
 
-            # Try ONNX Runtime Engine first (70% less RAM)
+            # Try PyTorch SentenceTransformers first (supports all HF models, SOTA quality)
             try:
-                model_inst = ONNXEmbeddingEngine(model_name)
-                logger.info("ONNX Embedding Engine initialized successfully")
+                from sentence_transformers import SentenceTransformer
+
+                model_inst = SentenceTransformer(model_name, device=device)
+                logger.info(
+                    f"PyTorch SentenceTransformer '{model_name}' loaded successfully"
+                )
             except Exception as e:
                 logger.warning(
-                    f"ONNX Engine unavailable ({e}), falling back to PyTorch SentenceTransformers"
+                    f"PyTorch SentenceTransformer unavailable ({e}), falling back to ONNX Runtime Engine"
                 )
 
             if model_inst is None:
                 try:
-                    from sentence_transformers import SentenceTransformer
-
-                    model_inst = SentenceTransformer(model_name, device=device)
-                    logger.info("PyTorch SentenceTransformer loaded successfully")
+                    model_inst = ONNXEmbeddingEngine(model_name)
+                    logger.info("ONNX Embedding Engine initialized successfully")
                 except Exception as e:
                     logger.error(f"Failed to load embedding model '{model_name}': {e}")
                     raise

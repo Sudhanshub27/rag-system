@@ -1,4 +1,6 @@
-# Core RAG dependencies (ONNX Runtime engine for 70% RAM reduction)
+# Core RAG dependencies (PyTorch SOTA Embedding Engine & Cross-Encoder Reranker)
+torch>=2.0.0
+sentence-transformers>=3.0.0
 chromadb>=0.5.0
 onnxruntime>=1.18.0
 tokenizers>=0.19.0
@@ -24,3 +26,4 @@ python-multipart>=0.0.9
 
 # Utilities
 tqdm>=4.66.0
+
