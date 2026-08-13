@@ -265,14 +265,6 @@ export default function Sidebar({
 
         {/* Scrollable Main Options Area */}
         <div className="flex-1 overflow-y-auto p-3.5 space-y-4">
-          
-          {/* Privacy & Zero-Training Status Pill */}
-          <div className="flex items-center justify-between p-2 bg-sage-50/90 border border-sage-200/80 rounded-lg text-xs text-sage-900 font-sans shadow-2xs">
-            <div className="flex items-center gap-1.5 font-medium text-[11px]">
-              <ShieldCheck className="w-4 h-4 text-sage-700 shrink-0" />
-              <span>Zero-Training & Local PII Scrubbing Active</span>
-            </div>
-          </div>
 
           {/* LLM Engine Selection */}
           <div className="space-y-1.5">
