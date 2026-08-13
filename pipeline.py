@@ -264,8 +264,9 @@ class RAGPipeline:
             )
             # Retrieve or build cached document summary
             doc_summary_text = doc_summarizer.get_or_build_doc_summary(
-                self._all_chunks, generator=generator
+                self._all_chunks, generator=generator, tenant_id=self.tenant_id
             )
+
             summary_chunk = Chunk(
                 text=doc_summary_text,
                 source="cached_doc_summary",

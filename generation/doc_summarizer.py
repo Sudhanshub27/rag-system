@@ -70,6 +70,7 @@ class DocumentSummarizer:
         self,
         chunks: list[Chunk],
         generator: Any,
+        tenant_id: str = "default_tenant",
         force_refresh: bool = False,
     ) -> str:
         """
@@ -78,6 +79,7 @@ class DocumentSummarizer:
         Args:
             chunks: List of document Chunk objects.
             generator: AnswerGenerator instance to perform LLM calls.
+            tenant_id: Unique tenant identifier for tenant-isolated cache keying.
             force_refresh: If True, bypass cache and rebuild.
 
         Returns:
@@ -87,16 +89,17 @@ class DocumentSummarizer:
             return "No content available to summarize."
 
         doc_hash = compute_content_hash(chunks)
-        cache_path = self.cache_dir / f"summary_{doc_hash}.json"
+        # Format key as summary_{tenant_id}_{doc_hash}.json for multi-tenant isolation
+        cache_key = f"{tenant_id}:{doc_hash}"
+        cache_filename = f"summary_{tenant_id}_{doc_hash}.json"
+        cache_path = self.cache_dir / cache_filename
 
         # Check cache store (zero LLM calls if hit)
         if not force_refresh and cache_path.exists():
             try:
                 with open(cache_path, encoding="utf-8") as f:
                     data = json.load(f)
-                logger.info(
-                    f"DocSummarizer: Cache HIT for content hash {doc_hash[:10]}..."
-                )
+                logger.info(f"DocSummarizer: Cache HIT for key '{cache_key[:20]}...'")
                 return data.get("summary", "")
             except Exception as e:
                 logger.warning(f"Failed to read summary cache ({e}), recomputing...")
@@ -112,14 +115,18 @@ class DocumentSummarizer:
         # Save to cache
         try:
             cache_data = {
+                "tenant_id": tenant_id,
                 "content_hash": doc_hash,
+                "cache_key": cache_key,
                 "chunk_count": len(chunks),
                 "timestamp": time.time(),
                 "summary": summary,
             }
             with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(cache_data, f, indent=2)
-            logger.info(f"DocSummarizer: Summary cached under hash {doc_hash[:10]}...")
+            logger.info(
+                f"DocSummarizer: Summary cached under key '{cache_key[:20]}...'"
+            )
         except Exception as e:
             logger.warning(f"Could not write summary cache: {e}")
 

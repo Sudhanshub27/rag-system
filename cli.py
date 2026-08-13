@@ -52,15 +52,18 @@ def main():
         prog="rag",
         description="Production Multi-Tenant RAG System CLI",
     )
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    import os
+
+    default_tenant = os.environ.get("RAG_TENANT_ID", "cli_default")
     parser.add_argument(
         "--tenant-id",
         "-t",
         "--user-id",
         "-u",
-        default="cli_user",
-        help="Tenant ID for multi-tenant data isolation (default: cli_user)",
+        default=default_tenant,
+        help="Explicit Tenant ID for multi-tenant data isolation (or set RAG_TENANT_ID env var)",
     )
+
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # ingest

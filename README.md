@@ -215,6 +215,26 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
+### 4. Multi-Tenant Usage Examples
+
+Multi-tenant data isolation requires specifying a `tenant_id` on all ingestion and query paths:
+
+- **CLI Usage** (pass `--tenant-id` explicitly or set `RAG_TENANT_ID` env var):
+  ```bash
+  # Ingest document under tenant_org_a
+  python cli.py --tenant-id tenant_org_a ingest confidential_report.pdf
+
+  # Query vector store & BM25 index for tenant_org_a
+  python cli.py --tenant-id tenant_org_a query "What is the project budget?"
+  ```
+
+- **Streamlit Web UI** (isolated per authenticated session):
+  ```bash
+  streamlit run app.py
+  ```
+  *(Enter your Tenant ID in the UI sidebar; session state automatically isolates vector collections, BM25 indices, and summary caches per user).*
+
+
 ---
 
 ## 🔐 Supported LLM Inference Engines
