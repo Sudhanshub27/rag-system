@@ -14,7 +14,7 @@ export default {
           300: '#DCD2BE',  // Hover background
         },
         charcoal: {
-          500: '#8A7F6E',  // Muted secondary text
+          500: '#6B6357',  // Muted secondary text (WCAG AA compliant contrast)
           700: '#4A423A',  // Sub-headers
           900: '#2A2420',  // Dark warm primary text
         },
