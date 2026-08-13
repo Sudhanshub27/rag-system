@@ -23,18 +23,15 @@ async def get_stats(tenant_id: str = Depends(get_tenant_id)):
     }
 
 
-@router.delete("/tenant/{tenant_id}")
-async def wipe_tenant_data(
-    tenant_id: str, current_tenant: str = Depends(get_tenant_id)
-):
+@router.delete("/tenant")
+async def wipe_tenant_data(current_tenant: str = Depends(get_tenant_id)):
     """
     Permanently purge all uploaded files, vector collections, and indices for the tenant.
     """
-    eff_id = tenant_id or current_tenant
-    pipeline = get_pipeline(eff_id)
+    pipeline = get_pipeline(current_tenant)
     pipeline.delete_all_tenant_data()
 
     return {
         "status": "success",
-        "message": f"All data for tenant '{eff_id}' has been permanently purged.",
+        "message": f"All data for tenant '{current_tenant}' has been permanently purged.",
     }

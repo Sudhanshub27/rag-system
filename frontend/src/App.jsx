@@ -279,7 +279,7 @@ function MainWorkspace() {
 
   const handleDeleteAllData = async () => {
     try {
-      await fetch(`${API_BASE}/tenant/${tenantId}`, {
+      await fetch(`${API_BASE}/tenant`, {
         method: 'DELETE',
         credentials: 'include',
       });
