@@ -19,8 +19,23 @@ export default function RetrievalSettings() {
         </div>
 
         <p className="text-sm text-charcoal-700 leading-relaxed font-sans">
-          None of these toggles are required — the default configuration works well for most questions. Here is what each feature does, why it helps, and when to turn it on or off.
+          None of these toggles are required — the default configuration works well for most questions. Here is what each feature does, why it helps, and how query intent (Narrow vs. Broad) is handled automatically.
         </p>
+
+        {/* Feature 0: Dual Query Routing */}
+        <div className="space-y-4 p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-sm">
+          <h2 className="font-serif font-bold text-xl text-charcoal-900 flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-terracotta-600" />
+            Automatic Dual Query Routing (Narrow vs. Broad)
+          </h2>
+          <div className="space-y-2 text-sm text-charcoal-900 font-sans leading-relaxed">
+            <p><strong>How it works:</strong> When you enter a question, the system's <code>QueryRouter</code> automatically classifies your intent using keyword pattern matching and BM25 score-shape heuristics:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-xs text-charcoal-700">
+              <li><strong>Narrow Intent (Specific Lookups):</strong> Questions asking for exact facts, dates, codes, or specific sections route through Hybrid Vector + BM25 search and Reranking.</li>
+              <li><strong>Broad Intent (Document Summarization):</strong> Queries like <em>"summarize this document"</em> or <em>"explain the whole PDF"</em> route to a specialized Map-Reduce summarizer. The resulting summary is cached on disk keyed by your Tenant ID and document content SHA-256 hash.</li>
+            </ul>
+          </div>
+        </div>
 
         {/* Feature 1: Multi-Query */}
         <div className="space-y-4 p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-sm">

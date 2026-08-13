@@ -17,31 +17,31 @@ export default function HowItWorks() {
     {
       num: '01',
       title: 'Upload & Parse Documents',
-      desc: 'Upload PDFs, text files, or notes. The system extracts every page, paragraph, and table while preserving exact page markers.',
+      desc: 'Upload PDFs, text files, or notes. The system extracts every page, paragraph, and table while preserving exact page markers and embedded links.',
       icon: FileText,
     },
     {
       num: '02',
-      title: 'Smart Chunking & Indexing',
-      desc: 'Long documents are split into logical passages ("chunks") with subtle overlaps so concepts, sentences, and quotes are never cut in half.',
+      title: 'Smart Chunking & Multi-Tenant Container Storage',
+      desc: 'Long documents are split into logical passages (250-512 token chunks with sentence boundary preservation). Embeddings are indexed into an isolated, per-tenant ChromaDB vector database container (tenant_<id>) so your data is structurally isolated from other users.',
       icon: Scissors,
     },
     {
       num: '03',
-      title: 'Hybrid Precision Search',
-      desc: 'When you ask a question, the system searches your documents using both exact keyword matching (names, numbers) and semantic meaning matching (concepts).',
+      title: 'Dual Query Routing: Narrow vs. Broad Intent',
+      desc: 'An automated router (QueryRouter) analyzes your question. Specific lookup queries execute precision Hybrid Search (BM25 + Dense Vector RRF fusion + Cross-Encoder reranking). Broad questions ("summarize this document") execute Map-Reduce summarization across all chunks and cache the result keyed by tenant and document SHA-256 hash.',
       icon: Search,
     },
     {
       num: '04',
       title: 'Local Privacy & PII Scrubbing',
-      desc: 'Personal details (names, emails, phone numbers) are redacted locally on your machine before excerpts are processed, ensuring zero data leakage.',
+      desc: 'Personal details (names, emails, phone numbers, IP addresses) are redacted locally on your machine before excerpts are processed by LLM APIs, ensuring zero personal data exposure to third-party endpoints.',
       icon: ShieldCheck,
     },
     {
       num: '05',
       title: 'Grounded Answer with Page Citations',
-      desc: 'The AI generates a clear answer strictly grounded in your text. Every claim includes a clickable inline citation pointing directly to the source page.',
+      desc: 'The AI generates a clear answer strictly grounded in your text. Every claim includes a clickable inline citation pointing directly to the source page and excerpt in the split-screen inspector.',
       icon: CheckCircle2,
     },
   ];

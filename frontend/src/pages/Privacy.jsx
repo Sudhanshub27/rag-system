@@ -35,10 +35,10 @@ export default function Privacy() {
           <section className="space-y-2 p-5 bg-parchment-50 border border-warmborder rounded-xl shadow-sm">
             <h2 className="font-serif font-bold text-lg text-charcoal-900 flex items-center gap-2">
               <Lock className="w-5 h-5 text-terracotta-600 shrink-0" />
-              Your documents are yours.
+              Multi-Tenant Data Container & Summary Cache Isolation
             </h2>
             <p className="text-charcoal-700 leading-relaxed">
-              What you upload is used for exactly one thing: answering your questions about it. It is never used to train any model, never reviewed by us, never shared with anyone else. No other user of this app can see your documents, your questions, or your answers — your data is stored in a space that's isolated to your ID alone.
+              What you upload is used for exactly one thing: answering your questions about it. Every tenant receives a dedicated, physically separate vector database container (<code className="text-xs bg-parchment-200 px-1 py-0.5 rounded">tenant_&lt;tenant_id&gt;</code>) in ChromaDB, as well as isolated document summary caches (<code className="text-xs bg-parchment-200 px-1 py-0.5 rounded">summary_&lt;tenant_id&gt;_&lt;hash&gt;.json</code>). No other user or session can retrieve, search, or view your vector embeddings, BM25 indices, or cached summaries.
             </p>
           </section>
 
