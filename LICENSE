@@ -12,22 +12,24 @@ architectural reference.
 2. OWNERSHIP & USAGE RESTRICTIONS
 This repository and its source code are NOT Open Source software under the Open
 Source Definition (OSI) or any Free/Libre Open Source Software (FLOSS) framework.
-Public visibility on GitHub does not grant any license or right to use, copy, or
-redistribute the code.
+Public visibility on GitHub does not grant any commercial license or right to
+redistribute or host the code.
 
 By viewing, cloning, or interacting with this repository, you acknowledge and
 agree to the following mandatory terms:
 
-  A. No Right to Execute or Deploy: You are strictly prohibited from compiling,
-     executing, hosting, running, sublicensing, leasing, selling, or deploying
-     this software or any portion thereof in any production, staging, development,
-     commercial, or non-commercial environment without explicit prior written
-     consent from the copyright holder (Sudhanshu Batra).
+  A. Limited Personal Local Evaluation Exception: You are granted a limited,
+     non-exclusive, non-transferable license to clone and run this software on your
+     local machine solely for personal evaluation, code review, and educational
+     testing. You are strictly prohibited from hosting, deploying, sublicensing,
+     leasing, selling, or running this software in any public, production, or
+     commercial environment without explicit prior written consent from the copyright
+     holder (Sudhanshu Batra).
 
   B. No Right to Modify or Create Derivative Works: You may not copy, modify,
      alter, adapt, extract, reverse-engineer, translate, or build derivative
      works based upon any component of this codebase, database schemas, or
-     algorithms without explicit written consent.
+     algorithms for public or commercial distribution without explicit written consent.
 
   C. No Right to Distribute or Mirror: You may not redistribute, publish, mirror,
      fork for redistribution, or re-license this software or any associated
@@ -37,8 +39,8 @@ agree to the following mandatory terms:
 ===============================================================================
 
 3. PERMISSION REQUESTS
-To request consent for commercial or non-commercial usage, deployment rights, or
-licensing inquiries, please contact the author directly via GitHub (@Sudhanshub27).
+To request consent for commercial usage, public cloud deployment, or licensing
+inquiries, please contact the author directly via GitHub (@Sudhanshub27).
 
 ===============================================================================
 

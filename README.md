@@ -225,6 +225,9 @@ rag-system/
 
 ## ⚡ Quick Start & Running Locally
 
+> [!NOTE]
+> **Evaluation License Notice**: The setup instructions below are provided strictly for **personal evaluation, code inspection, and local testing** on your machine under the [LICENSE](LICENSE). Public deployment, commercial hosting, or redistribution remains strictly prohibited without written consent.
+
 ### 1. Clone & Environment Setup
 
 ```bash
