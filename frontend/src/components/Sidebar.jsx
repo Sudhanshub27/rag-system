@@ -158,6 +158,14 @@ export default function Sidebar({
     });
   };
 
+  const handleModelChange = (model) => {
+    onUpdateSettings((prev) => {
+      const updated = { ...prev, model };
+      localStorage.setItem('rag_model', model);
+      return updated;
+    });
+  };
+
   const handleCopyTenantId = () => {
     if (!tenantId) return;
     navigator.clipboard.writeText(tenantId);
@@ -280,11 +288,11 @@ export default function Sidebar({
               className="w-full text-xs bg-parchment-50 border border-warmborder rounded-lg p-2 text-charcoal-900 font-sans focus:outline-none focus:border-terracotta-600 shadow-2xs cursor-pointer font-medium"
             >
               <option value="groq">Groq API (Default - Free 70B & Zero-Training)</option>
-              <option value="openai">OpenAI API (GPT-4o / GPT-3.5)</option>
-              <option value="anthropic">Anthropic Claude API (Claude 3.5)</option>
-              <option value="deepseek">DeepSeek API (V3 & R1)</option>
-              <option value="gemini">Google Gemini API (1.5 Pro / Flash)</option>
-              <option value="openrouter">OpenRouter API (Multi-Model)</option>
+              <option value="openai">OpenAI API</option>
+              <option value="anthropic">Anthropic Claude API</option>
+              <option value="deepseek">DeepSeek API</option>
+              <option value="gemini">Google Gemini API</option>
+              <option value="openrouter">OpenRouter API</option>
             </select>
 
             <div className="relative flex items-center">
@@ -292,7 +300,7 @@ export default function Sidebar({
                 type={showApiKey ? 'text' : 'password'}
                 value={settings.apiKey || ''}
                 onChange={handleApiKeyChange}
-                placeholder={settings.provider === 'groq' || !settings.provider ? "Groq active (Optional custom key)..." : `Paste ${settings.provider.toUpperCase()} API key...`}
+                placeholder={settings.provider === 'groq' || !settings.provider ? "Groq active (Optional custom key)..." : `Paste ${settings.provider ? settings.provider.toUpperCase() : 'API'} key...`}
                 className="w-full text-xs bg-parchment-50 border border-warmborder rounded-lg p-2 pr-7 text-charcoal-900 font-mono placeholder:text-charcoal-500/60 focus:outline-none focus:border-terracotta-600 shadow-2xs"
               />
               <button
@@ -303,6 +311,15 @@ export default function Sidebar({
                 {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
+
+            {/* Optional Model Override */}
+            <input
+              type="text"
+              value={settings.model || ''}
+              onChange={(e) => handleModelChange(e.target.value)}
+              placeholder="Optional: Model ID (e.g. claude-3-5-sonnet, gpt-4o)..."
+              className="w-full text-[11px] bg-parchment-50/70 border border-warmborder/80 rounded-lg p-1.5 text-charcoal-900 font-mono placeholder:text-charcoal-500/50 focus:outline-none focus:border-terracotta-600 shadow-2xs"
+            />
 
             {/* Live API Rate Limit & Protection Indicator */}
             <div className="pt-1 flex items-center justify-between text-[10px] text-charcoal-500 font-sans">

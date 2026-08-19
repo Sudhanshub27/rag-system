@@ -511,8 +511,7 @@ class AnswerGenerator:
                 if (
                     not self.model
                     or self.model == generation_config.model
-                    or "deepseek" in self.model
-                    or "llama" in self.model
+                    or "decommissioned" in self.model
                 ):
                     self.model = "openai/gpt-oss-120b"
                 return OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
@@ -544,12 +543,7 @@ class AnswerGenerator:
             try:
                 import anthropic
 
-                if (
-                    not self.model
-                    or self.model == generation_config.model
-                    or "llama" in self.model
-                    or "deepseek" in self.model
-                ):
+                if not self.model or self.model == generation_config.model:
                     self.model = "claude-3-5-sonnet-20241022"
                 return anthropic.Anthropic(api_key=key)
             except ImportError as e:
@@ -564,12 +558,7 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if (
-                    not self.model
-                    or self.model == generation_config.model
-                    or "llama" in self.model
-                    or "deepseek" in self.model
-                ):
+                if not self.model or self.model == generation_config.model:
                     self.model = "gpt-4o-mini"
                 return OpenAI(api_key=key)
             except ImportError as e:
@@ -584,12 +573,7 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if (
-                    not self.model
-                    or self.model == generation_config.model
-                    or "llama" in self.model
-                    or "free" in self.model
-                ):
+                if not self.model or self.model == generation_config.model:
                     self.model = "deepseek-chat"
                 return OpenAI(api_key=key, base_url="https://api.deepseek.com")
             except ImportError as e:
@@ -604,11 +588,7 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if (
-                    not self.model
-                    or self.model == generation_config.model
-                    or "versatile" in self.model
-                ):
+                if not self.model or self.model == generation_config.model:
                     self.model = "meta-llama/llama-3.3-70b-instruct"
                 return OpenAI(
                     api_key=key,
@@ -630,13 +610,8 @@ class AnswerGenerator:
             try:
                 from openai import OpenAI
 
-                if (
-                    not self.model
-                    or self.model == generation_config.model
-                    or "llama" in self.model
-                    or "free" in self.model
-                ):
-                    self.model = "gemini-2.0-flash"
+                if not self.model or self.model == generation_config.model:
+                    self.model = "gemini-1.5-flash"
                 return OpenAI(
                     api_key=key,
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -703,14 +678,50 @@ class AnswerGenerator:
             raise RuntimeError(f"LLM generation failed: {e}") from e
 
     def _call_anthropic(self, system: str, user: str) -> str:
-        response = self._client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return response.content[0].text.strip()
+        models_to_try = [self.model]
+        fallback_models = [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022",
+            "claude-3-opus-20240229",
+            "claude-3-haiku-20240307",
+            "claude-2.1",
+        ]
+        for fb in fallback_models:
+            if fb not in models_to_try:
+                models_to_try.append(fb)
+
+        keys = self._get_keys_list("ANTHROPIC_API_KEY", self.custom_api_key)
+        if not keys:
+            keys = [getattr(self._client, "api_key", "")]
+
+        import anthropic
+
+        last_error = None
+        for m in models_to_try:
+            for key in keys:
+                if not key:
+                    continue
+                client = anthropic.Anthropic(api_key=key)
+                try:
+                    response = client.messages.create(
+                        model=m,
+                        max_tokens=self.max_tokens,
+                        temperature=self.temperature,
+                        system=system,
+                        messages=[{"role": "user", "content": user}],
+                    )
+                    if m != self.model or key != keys[0]:
+                        logger.info(
+                            f"Anthropic execution succeeded with model '{m}' (key prefix '{key[:8]}...')"
+                        )
+                    return response.content[0].text.strip()
+                except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        f"Anthropic key '{key[:8]}...' model '{m}' call failed: {e}. Trying next key/model..."
+                    )
+
+        raise last_error
 
     def _call_openai(self, system: str, user: str) -> str:
         models_to_try = [self.model]
@@ -721,9 +732,40 @@ class AnswerGenerator:
                 "qwen/qwen3.6-27b",
                 "groq/compound-mini",
             ]
-            for fb in fallback_models:
-                if fb not in models_to_try:
-                    models_to_try.append(fb)
+        elif self.provider == "openai":
+            fallback_models = [
+                "gpt-4o-mini",
+                "gpt-4o",
+                "gpt-4-turbo",
+                "gpt-3.5-turbo",
+                "o3-mini",
+                "o1-mini",
+            ]
+        elif self.provider == "deepseek":
+            fallback_models = [
+                "deepseek-chat",
+                "deepseek-reasoner",
+            ]
+        elif self.provider == "gemini":
+            fallback_models = [
+                "gemini-1.5-flash",
+                "gemini-1.5-pro",
+                "gemini-2.0-flash",
+                "gemini-1.0-pro",
+            ]
+        elif self.provider == "openrouter":
+            fallback_models = [
+                "meta-llama/llama-3.3-70b-instruct",
+                "anthropic/claude-3.5-sonnet",
+                "deepseek/deepseek-r1",
+                "openai/gpt-4o",
+            ]
+        else:
+            fallback_models = []
+
+        for fb in fallback_models:
+            if fb not in models_to_try:
+                models_to_try.append(fb)
 
         # Retrieve key list (supports comma-separated keys in env/secrets)
         keys = []

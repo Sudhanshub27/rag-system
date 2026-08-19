@@ -59,6 +59,7 @@ function MainWorkspace() {
     useHyde: false,
     useMultiQuery: false,
     provider: localStorage.getItem('rag_provider') || 'groq',
+    model: localStorage.getItem('rag_model') || '',
     apiKey: localStorage.getItem('rag_api_key') || '',
     anonymizePii: localStorage.getItem('rag_anonymize_pii') !== 'false',
   }));
@@ -158,6 +159,7 @@ function MainWorkspace() {
           use_hyde: settings.useHyde,
           use_multi_query: settings.useMultiQuery,
           provider: settings.provider,
+          model: settings.model || null,
           api_key: settings.apiKey || null,
           anonymize_pii: true,
         }),
