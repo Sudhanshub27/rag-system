@@ -422,26 +422,40 @@ export default function Sidebar({
               />
             </div>
 
-            {/* Smart Large Document Recommendation Glassmorphic Banner */}
+            {/* Smart Large Document Recommendation Banner (Parchment & Terracotta Theme) */}
             {stats && stats.total_chunks > 20 && (!settings.useHyde || !settings.useMultiQuery) && (
-              <div className="p-3 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 rounded-xl space-y-2 font-sans shadow-xs backdrop-blur-xs">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
-                  <div className="p-1 rounded-md bg-amber-500/20 text-amber-700">
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <div className="p-3 bg-parchment-50 border border-warmborder rounded-xl space-y-2 font-sans shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-charcoal-900">
+                    <Sparkles className="w-3.5 h-3.5 text-terracotta-600 shrink-0" />
+                    <span>Large Document Detected</span>
                   </div>
-                  <span>Large Document Detected ({stats.total_chunks} Chunks)</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-terracotta-100 text-terracotta-700 border border-terracotta-600/30">
+                    {stats.total_chunks} Chunks
+                  </span>
                 </div>
-                <p className="text-[11px] text-amber-900/90 leading-tight">
-                  For maximum search accuracy across large documents, enabling HyDE & Multi-Query mode is strongly recommended.
+
+                <p className="text-[11px] text-charcoal-700 leading-tight">
+                  For maximum search accuracy across multi-page documents, enabling <strong>HyDE</strong> & <strong>Multi-Query</strong> mode is strongly recommended.
                 </p>
+
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-parchment-200 text-charcoal-700 border border-warmborder flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-sage-600" /> HyDE Search
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-parchment-200 text-charcoal-700 border border-warmborder flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-sage-600" /> Multi-Query 3x
+                  </span>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {
                     onUpdateSettings((prev) => ({ ...prev, useHyde: true, useMultiQuery: true }));
                   }}
-                  className="w-full text-xs font-semibold bg-gradient-to-r from-amber-600 via-amber-700 to-terracotta-600 hover:from-amber-500 hover:to-terracotta-500 text-white p-2 rounded-lg transition-all shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full text-xs font-semibold bg-terracotta-600 hover:bg-terracotta-700 text-white p-2 rounded-lg transition-colors shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                 >
-                  <Zap className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
+                  <Zap className="w-3.5 h-3.5 text-white shrink-0" />
                   Enable HyDE & Multi-Query Mode
                 </button>
               </div>
