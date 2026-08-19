@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Sliders,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -377,6 +378,31 @@ export default function Sidebar({
                 <span>Multi-Query Expansion</span>
               </label>
             </div>
+
+            {/* Smart Large Document Recommendation Banner */}
+            {stats && stats.total_chunks > 20 && (!settings.useHyde || !settings.useMultiQuery) && (
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1.5 font-sans mt-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-pulse" />
+                  <span>Large Document Detected ({stats.total_chunks} Chunks)</span>
+                </div>
+                <p className="text-[10px] text-amber-800/90 leading-tight">
+                  For maximum search accuracy across large documents, enabling HyDE & Multi-Query mode is strongly recommended.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdateSettings((prev) => {
+                      const updated = { ...prev, useHyde: true, useMultiQuery: true };
+                      return updated;
+                    });
+                  }}
+                  className="w-full text-[11px] font-semibold bg-amber-600 hover:bg-amber-700 text-white p-1.5 rounded transition-colors shadow-2xs flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  ⚡ Enable HyDE & Multi-Query Mode
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Drag & Drop File Upload */}

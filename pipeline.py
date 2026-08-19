@@ -308,9 +308,14 @@ class RAGPipeline:
             if hyde_doc:
                 search_query = f"{question}\n{hyde_doc}"
 
-        # ML Feature 2: Multi-Query Expansion
-        if use_multi_query:
-            logger.info("Generating query expansions...")
+        # ML Feature 2: Multi-Query Expansion (Auto-enabled for large documents >30 chunks)
+        should_multi_query = use_multi_query or (
+            len(self._all_chunks) > 30 and len(question) < 80
+        )
+        if should_multi_query:
+            logger.info(
+                f"Generating query expansions (requested={use_multi_query}, auto_boosted={len(self._all_chunks) > 30})..."
+            )
             expanded_queries = generator.generate_query_expansions(question)
             all_chunks = self._retriever.retrieve(search_query)
             for eq in expanded_queries:
