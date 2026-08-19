@@ -716,8 +716,8 @@ class AnswerGenerator:
         if self.provider == "groq":
             fallback_models = [
                 "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant",
                 "deepseek-r1-distill-llama-70b",
+                "llama-3.1-8b-instant",
                 "gemma2-9b-it",
             ]
             for fb in fallback_models:
@@ -746,15 +746,15 @@ class AnswerGenerator:
         base_url = getattr(self._client, "base_url", None)
         default_headers = getattr(self._client, "default_headers", None)
 
-        for key in keys:
-            if not key:
-                continue
-            client = OpenAI(
-                api_key=key,
-                base_url=base_url,
-                default_headers=default_headers,
-            )
-            for m in models_to_try:
+        for m in models_to_try:
+            for key in keys:
+                if not key:
+                    continue
+                client = OpenAI(
+                    api_key=key,
+                    base_url=base_url,
+                    default_headers=default_headers,
+                )
                 try:
                     response = client.chat.completions.create(
                         model=m,
