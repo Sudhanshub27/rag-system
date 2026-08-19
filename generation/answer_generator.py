@@ -137,21 +137,18 @@ class AnswerGenerator:
         if anonymize_pii and pii_mapping:
             cleaned_answer = pii_anonymizer.deanonymize(cleaned_answer, pii_mapping)
 
-        # Check for explicit fallback signals or insufficient context keywords
-        fallback_keywords = [
-            "could not find",
-            "insufficient information",
-            "cannot answer",
-            "does not contain",
-            "not mentioned",
-            "no information",
-            "unable to answer",
-            "not provided in the context",
-            "context does not contain",
+        # Check for explicit fallback signals or empty answers
+        fallback_signals = [
             prompts_config.fallback_response.lower(),
+            "could not find relevant information in your uploaded documents",
+            "no relevant information found in the uploaded documents",
+            "i could not find any information regarding",
+            "unable to find relevant information",
         ]
+        lower_ans = cleaned_answer.lower().strip()
         is_fallback = (
-            any(kw in cleaned_answer.lower() for kw in fallback_keywords)
+            any(sig in lower_ans for sig in fallback_signals)
+            or (lower_ans.startswith("i could not find") and len(lower_ans) < 140)
             or len(cleaned_answer.strip()) < 5
         )
 

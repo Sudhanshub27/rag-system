@@ -324,6 +324,24 @@ class RAGPipeline:
         else:
             retrieved_pool = self._retriever.retrieve(search_query)
 
+        # Smart Fallback: For small documents (e.g. 1-page certificate/resume with <= 25 chunks)
+        # or when initial retrieval returns empty due to query typos, include ordered document chunks
+        if not retrieved_pool or len(self._all_chunks) <= 25:
+            fallback_chunks = self._retriever.get_ordered_document_chunks()
+            if fallback_chunks:
+                logger.info(
+                    f"Small corpus / low initial retrieval match ({len(retrieved_pool)} chunks) — "
+                    f"using all {len(fallback_chunks)} document chunks as context pool"
+                )
+                if not retrieved_pool:
+                    retrieved_pool = fallback_chunks
+                else:
+                    existing_ids = {rc.chunk.chunk_id for rc in retrieved_pool}
+                    for fc in fallback_chunks:
+                        if fc.chunk.chunk_id not in existing_ids:
+                            retrieved_pool.append(fc)
+                            existing_ids.add(fc.chunk.chunk_id)
+
         # For broad queries (e.g., "explain pitch deck", "summary"), expand context limit
         is_broad = any(
             k in question.lower()
