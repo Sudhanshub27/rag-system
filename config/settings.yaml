@@ -48,7 +48,7 @@ retrieval:
 # ---------------------
 generation:
   provider: "groq"        # "groq" | "ollama" | "openai" | "anthropic" | "deepseek"
-  model: "llama-3.3-70b-versatile"  # Free & zero-training fast model on Groq
+  model: "openai/gpt-oss-120b"  # Free & zero-training fast 120B model on Groq
 
   max_tokens: 2048
   temperature: 0.1         # Low temp for factual grounding

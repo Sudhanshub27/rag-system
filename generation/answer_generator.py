@@ -512,8 +512,9 @@ class AnswerGenerator:
                     not self.model
                     or self.model == generation_config.model
                     or "deepseek" in self.model
+                    or "llama" in self.model
                 ):
-                    self.model = "llama-3.3-70b-versatile"
+                    self.model = "openai/gpt-oss-120b"
                 return OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
             except ImportError as e:
                 raise ImportError(
@@ -715,10 +716,10 @@ class AnswerGenerator:
         models_to_try = [self.model]
         if self.provider == "groq":
             fallback_models = [
-                "llama-3.3-70b-versatile",
-                "deepseek-r1-distill-llama-70b",
-                "llama-3.1-8b-instant",
-                "gemma2-9b-it",
+                "openai/gpt-oss-120b",
+                "groq/compound",
+                "qwen/qwen3.6-27b",
+                "groq/compound-mini",
             ]
             for fb in fallback_models:
                 if fb not in models_to_try:
