@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Sliders, Bookmark } from 'lucide-react';
 import Navbar from './components/Navbar';
@@ -6,10 +6,11 @@ import Sidebar from './components/Sidebar';
 import ReadingPane from './components/ReadingPane';
 import SourceInspector from './components/SourceInspector';
 
-import HowItWorks from './pages/HowItWorks';
-import Privacy from './pages/Privacy';
-import RetrievalSettings from './pages/RetrievalSettings';
-import FAQ from './pages/FAQ';
+// Lazy loaded page components for optimal initial bundle performance
+const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const RetrievalSettings = lazy(() => import('./pages/RetrievalSettings'));
+const FAQ = lazy(() => import('./pages/FAQ'));
 
 const getApiBase = () => {
   let base = import.meta.env.VITE_API_BASE_URL;
@@ -433,13 +434,22 @@ export default function App() {
       <div className="flex flex-col h-screen w-screen overflow-hidden bg-parchment-100 font-sans antialiased">
         <Navbar />
         <main className="flex-1 min-h-0 overflow-hidden relative flex">
-          <Routes>
-            <Route path="/" element={<MainWorkspace />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/retrieval-settings" element={<RetrievalSettings />} />
-            <Route path="/faq" element={<FAQ />} />
-          </Routes>
+          <Suspense fallback={
+            <div className="flex-1 flex items-center justify-center p-8 bg-parchment-100 font-sans text-xs text-charcoal-700">
+              <div className="flex items-center gap-2 font-serif italic text-sm">
+                <span className="w-2 h-2 rounded-full bg-terracotta-600 animate-ping" />
+                Loading page content...
+              </div>
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={<MainWorkspace />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/retrieval-settings" element={<RetrievalSettings />} />
+              <Route path="/faq" element={<FAQ />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </Router>
