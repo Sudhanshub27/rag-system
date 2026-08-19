@@ -3,17 +3,17 @@ import { Shield, Key, Lock, Trash2, UserX, ShieldCheck, Cpu } from 'lucide-react
 
 export default function Privacy() {
   return (
-    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-8 py-10">
-      <div className="max-w-3xl mx-auto space-y-10 pb-16">
+    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-4 sm:px-8 py-6 sm:py-10">
+      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10 pb-16">
         {/* Header */}
-        <div className="border-b border-warmborder pb-6 space-y-2">
+        <div className="border-b border-warmborder pb-5 sm:pb-6 space-y-2">
           <div className="flex items-center gap-2 text-terracotta-600 font-semibold text-xs uppercase tracking-wider font-sans">
-            <Shield className="w-4 h-4" /> Data Protection & Privacy Architecture
+            <Shield className="w-4 h-4 shrink-0" /> Data Protection & Privacy Architecture
           </div>
-          <h1 className="font-serif font-bold text-3xl text-charcoal-900 tracking-tight">
+          <h1 className="font-serif font-bold text-2xl sm:text-3xl text-charcoal-900 tracking-tight">
             Privacy & Your Data
           </h1>
-          <p className="font-serif italic text-charcoal-700 text-base">
+          <p className="font-serif italic text-charcoal-700 text-sm sm:text-base">
             No signup, zero identity tracking, and complete per-tenant isolation.
           </p>
         </div>

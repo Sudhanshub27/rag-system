@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Sliders, Bookmark } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ReadingPane from './components/ReadingPane';
@@ -294,8 +295,48 @@ function MainWorkspace() {
     }
   };
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSourceOpen, setMobileSourceOpen] = useState(false);
+
+  const handleSelectCitation = (citation) => {
+    setSelectedCitation(citation);
+    if (window.innerWidth < 768) {
+      setMobileSourceOpen(true);
+    }
+  };
+
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden relative">
+      {/* Mobile Top Workspace Bar (Visible on < md) */}
+      <div className="md:hidden shrink-0 bg-parchment-200/90 border-b border-warmborder px-3 py-2 flex items-center justify-between text-xs font-sans font-medium text-charcoal-800 select-none shadow-2xs z-20">
+        <button
+          type="button"
+          onClick={() => setMobileSidebarOpen(true)}
+          className="flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl bg-parchment-50 border border-warmborder text-charcoal-900 hover:border-terracotta-600 shadow-2xs transition-colors cursor-pointer"
+        >
+          <Sliders className="w-4 h-4 text-terracotta-600 shrink-0" />
+          <span>Controls & Upload</span>
+          {documents.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-terracotta-100 text-terracotta-700 font-mono text-[10px] font-bold">
+              {documents.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileSourceOpen(true)}
+          className={`flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
+            selectedCitation
+              ? 'bg-terracotta-100 border-terracotta-600/40 text-terracotta-700 font-semibold'
+              : 'bg-parchment-50 border-warmborder text-charcoal-700 hover:text-charcoal-900'
+          }`}
+        >
+          <Bookmark className="w-4 h-4 text-terracotta-600 shrink-0" />
+          <span>{selectedCitation ? `Source [${selectedCitation.id || 1}]` : 'Sources'}</span>
+        </button>
+      </div>
+
       <Sidebar
         tenantId={tenantId}
         documents={documents}
@@ -310,24 +351,75 @@ function MainWorkspace() {
         settings={settings}
         onUpdateSettings={setSettings}
       />
+
       <ReadingPane
         messages={messages}
         onSendMessage={handleSendMessage}
         isStreaming={isStreaming}
         currentStreamText={currentStreamText}
-        onSelectCitation={setSelectedCitation}
+        onSelectCitation={handleSelectCitation}
         error={error}
         followups={followups}
         onSelectFollowup={handleSendMessage}
         onSelectCheckpoint={handleSelectCheckpoint}
         debugScores={settings.debugScores}
       />
+
       {settings.splitView && (
         <SourceInspector
           selectedCitation={selectedCitation}
           onClose={() => setSelectedCitation(null)}
           debugScores={settings.debugScores}
         />
+      )}
+
+      {/* Mobile Sidebar Sheet / Drawer */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          <div
+            onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 bg-charcoal-900/50 backdrop-blur-xs transition-opacity animate-fadeIn"
+          />
+          <div className="fixed inset-x-0 bottom-0 top-12 bg-parchment-200 rounded-t-2xl shadow-2xl z-50 flex flex-col overflow-hidden animate-slideInBottom">
+            <Sidebar
+              tenantId={tenantId}
+              documents={documents}
+              stats={stats}
+              messages={messages}
+              onUpload={handleUpload}
+              fileProgress={fileProgress}
+              onDeleteDoc={handleDeleteDoc}
+              onDeleteAllData={handleDeleteAllData}
+              onClearHistory={handleClearHistory}
+              onSelectCheckpoint={(idx) => {
+                handleSelectCheckpoint(idx);
+                setMobileSidebarOpen(false);
+              }}
+              settings={settings}
+              onUpdateSettings={setSettings}
+              isMobileDrawer={true}
+              onCloseMobile={() => setMobileSidebarOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Source Inspector Sheet / Drawer */}
+      {mobileSourceOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          <div
+            onClick={() => setMobileSourceOpen(false)}
+            className="fixed inset-0 bg-charcoal-900/50 backdrop-blur-xs transition-opacity animate-fadeIn"
+          />
+          <div className="fixed inset-x-0 bottom-0 top-16 bg-parchment-200 rounded-t-2xl shadow-2xl z-50 flex flex-col overflow-hidden animate-slideInBottom">
+            <SourceInspector
+              selectedCitation={selectedCitation}
+              onClose={() => setMobileSourceOpen(false)}
+              debugScores={settings.debugScores}
+              isMobileDrawer={true}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

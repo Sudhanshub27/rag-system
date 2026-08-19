@@ -96,17 +96,17 @@ export default function FAQ() {
   ];
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-8 py-10">
-      <div className="max-w-3xl mx-auto space-y-10 pb-16">
+    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-4 sm:px-8 py-6 sm:py-10">
+      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10 pb-16">
         {/* Header */}
-        <div className="border-b border-warmborder pb-6 space-y-2">
+        <div className="border-b border-warmborder pb-5 sm:pb-6 space-y-2">
           <div className="flex items-center gap-2 text-terracotta-600 font-semibold text-xs uppercase tracking-wider font-sans">
-            <HelpCircle className="w-4 h-4" /> Frequently Asked Questions
+            <HelpCircle className="w-4 h-4 shrink-0" /> Frequently Asked Questions
           </div>
-          <h1 className="font-serif font-bold text-3xl text-charcoal-900 tracking-tight">
+          <h1 className="font-serif font-bold text-2xl sm:text-3xl text-charcoal-900 tracking-tight">
             FAQ
           </h1>
-          <p className="font-serif italic text-charcoal-700 text-base">
+          <p className="font-serif italic text-charcoal-700 text-sm sm:text-base">
             Common questions about document isolation, Tenant IDs, file formats, and privacy.
           </p>
         </div>
@@ -118,19 +118,19 @@ export default function FAQ() {
             return (
               <div
                 key={index}
-                className="p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-xs space-y-3"
+                className="p-4 sm:p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-xs space-y-3"
               >
-                <h3 className="font-serif font-bold text-lg text-charcoal-900 flex items-center gap-2.5">
-                  <Icon className="w-5 h-5 text-terracotta-600 shrink-0" />
+                <h3 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 flex items-start gap-2.5">
+                  <Icon className="w-5 h-5 text-terracotta-600 shrink-0 mt-0.5" />
                   <span>{item.q}</span>
                 </h3>
 
                 {item.isStructuredFormats ? (
-                  <div className="pl-7 space-y-4 pt-1">
+                  <div className="pl-0 sm:pl-7 space-y-4 pt-1">
                     <p className="text-xs text-charcoal-700 font-sans leading-relaxed">
                       We support <strong>19 distinct file formats</strong> across documents, spreadsheets, structured data, and code markup. All formats are automatically parsed, chunked, and indexed with equal retrieval accuracy:
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {fileCategories.map((cat, cIdx) => {
                         const CatIcon = cat.icon;
                         return (
@@ -161,7 +161,7 @@ export default function FAQ() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-charcoal-700 leading-relaxed font-sans pl-7 flex-1">
+                  <p className="text-charcoal-700 leading-relaxed font-sans pl-0 sm:pl-7 text-xs sm:text-sm">
                     {item.a}
                   </p>
                 )}

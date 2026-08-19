@@ -12,41 +12,43 @@ export default function QuestionBar({ onSendMessage, isStreaming, followups, onS
   };
 
   return (
-    <div className="bg-parchment-100 p-4 space-y-2">
-      {/* Understated Follow-up Links */}
+    <div className="bg-parchment-100 p-3 sm:p-4 space-y-2 select-none border-t border-warmborder/60">
+      {/* Understated Follow-up Suggestion Pills */}
       {followups && followups.length > 0 && !isStreaming && (
-        <div className="flex flex-wrap items-center gap-2 max-w-3xl mx-auto px-1 text-xs">
-          <span className="text-charcoal-500 font-medium font-sans">Suggested topics:</span>
+        <div className="flex flex-wrap items-center gap-1.5 max-w-3xl mx-auto px-1 text-xs">
+          <span className="text-charcoal-500 font-medium font-sans text-[11px]">Suggested topics:</span>
           {followups.map((f, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => onSelectFollowup(f)}
-              className="text-terracotta-600 hover:text-terracotta-700 hover:underline font-serif italic text-xs transition-colors"
+              className="px-2.5 py-1 rounded-full bg-parchment-50 border border-warmborder text-terracotta-600 hover:text-terracotta-700 hover:border-terracotta-600/50 font-serif italic text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
             >
-              "{f}"
+              <span>"{f}"</span>
             </button>
           ))}
         </div>
       )}
 
       {/* Input Bar */}
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex items-center gap-2">
-        <div className="relative flex-1 flex items-center">
-          <BookOpen className="absolute left-3.5 w-4 h-4 text-charcoal-500 pointer-events-none" />
+      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex items-center gap-2 w-full min-w-0">
+        <div className="relative flex-1 flex items-center min-w-0">
+          <BookOpen className="absolute left-3.5 w-4 h-4 text-charcoal-500 pointer-events-none shrink-0" />
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a research question or request a section breakdown..."
             disabled={isStreaming}
-            className="w-full bg-parchment-50 border border-warmborder rounded-xl pl-10 pr-4 py-3 text-sm text-charcoal-900 placeholder-charcoal-500 focus:outline-none focus:border-terracotta-600 focus:ring-1 focus:ring-terracotta-600 transition-all font-sans disabled:opacity-50 shadow-sm"
+            className="w-full bg-parchment-50 border border-warmborder rounded-xl pl-10 pr-4 py-3 min-h-[44px] text-sm text-charcoal-900 placeholder-charcoal-500 focus:outline-none focus:border-terracotta-600 focus:ring-1 focus:ring-terracotta-600 transition-all font-sans disabled:opacity-50 shadow-2xs min-w-0"
           />
         </div>
         <button
           type="submit"
           disabled={!input.trim() || isStreaming}
-          className="bg-terracotta-600 hover:bg-terracotta-700 disabled:opacity-40 text-parchment-50 rounded-xl p-3 flex items-center justify-center transition-colors shadow-sm"
+          className="bg-terracotta-600 hover:bg-terracotta-700 disabled:opacity-40 text-parchment-50 rounded-xl min-w-[44px] min-h-[44px] p-2.5 flex items-center justify-center transition-colors shadow-2xs shrink-0 cursor-pointer"
           title="Submit question"
+          aria-label="Submit question"
         >
           <ArrowUp className="w-5 h-5" />
         </button>

@@ -47,17 +47,17 @@ export default function HowItWorks() {
   ];
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-8 py-10">
-      <div className="max-w-3xl mx-auto space-y-12 pb-16">
+    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-4 sm:px-8 py-6 sm:py-10">
+      <div className="max-w-3xl mx-auto space-y-8 sm:space-y-12 pb-16">
         {/* Header */}
-        <div className="border-b border-warmborder pb-6 space-y-2">
+        <div className="border-b border-warmborder pb-5 sm:pb-6 space-y-2">
           <div className="flex items-center gap-2 text-terracotta-600 font-semibold text-xs uppercase tracking-wider font-sans">
-            <BookOpen className="w-4 h-4" /> Operational Guide
+            <BookOpen className="w-4 h-4 shrink-0" /> Operational Guide
           </div>
-          <h1 className="font-serif font-bold text-3xl text-charcoal-900 tracking-tight">
+          <h1 className="font-serif font-bold text-2xl sm:text-3xl text-charcoal-900 tracking-tight">
             How It Works
           </h1>
-          <p className="font-serif italic text-charcoal-700 text-base">
+          <p className="font-serif italic text-charcoal-700 text-sm sm:text-base">
             From document upload to cited, verifiable answers — step by step.
           </p>
         </div>
@@ -65,7 +65,7 @@ export default function HowItWorks() {
         {/* Step-by-Step Explanation Section */}
         <div className="space-y-6">
           <div className="text-xs uppercase font-semibold tracking-wider text-charcoal-500 font-sans flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-terracotta-600" /> The 5-Step Process
+            <Sparkles className="w-3.5 h-3.5 text-terracotta-600 shrink-0" /> The 5-Step Process
           </div>
 
           <div className="space-y-4">
@@ -74,21 +74,21 @@ export default function HowItWorks() {
               return (
                 <div
                   key={idx}
-                  className="p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs flex items-start gap-4 transition-all hover:border-terracotta-600/40"
+                  className="p-4 sm:p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs flex items-start gap-3.5 sm:gap-4 transition-all hover:border-terracotta-600/40"
                 >
                   <div className="flex flex-col items-center justify-center shrink-0">
-                    <span className="font-serif font-bold text-lg text-terracotta-600">
+                    <span className="font-serif font-bold text-base sm:text-lg text-terracotta-600">
                       {step.num}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-terracotta-100/60 border border-terracotta-600/20 flex items-center justify-center mt-1">
-                      <Icon className="w-4 h-4 text-terracotta-600" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-terracotta-100/60 border border-terracotta-600/20 flex items-center justify-center mt-1">
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terracotta-600" />
                     </div>
                   </div>
-                  <div className="space-y-1 flex-1">
-                    <h3 className="font-serif font-bold text-lg text-charcoal-900 flex items-center justify-between">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h3 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 flex items-center justify-between">
                       <span>{step.title}</span>
                     </h3>
-                    <p className="text-sm text-charcoal-700 leading-relaxed font-sans">
+                    <p className="text-xs sm:text-sm text-charcoal-700 leading-relaxed font-sans">
                       {step.desc}
                     </p>
                   </div>
@@ -102,19 +102,19 @@ export default function HowItWorks() {
         <div className="border-t border-warmborder pt-8 space-y-6">
           <div className="space-y-2">
             <div className="text-xs uppercase font-semibold tracking-wider text-charcoal-500 font-sans flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-terracotta-600" /> Comparison Guide
+              <Layers className="w-3.5 h-3.5 text-terracotta-600 shrink-0" /> Comparison Guide
             </div>
-            <h2 className="font-serif font-bold text-2xl text-charcoal-900 tracking-tight">
+            <h2 className="font-serif font-bold text-xl sm:text-2xl text-charcoal-900 tracking-tight">
               Why use this instead of pasting PDFs into ChatGPT or Claude?
             </h2>
-            <p className="text-sm text-charcoal-700 font-serif italic">
+            <p className="text-xs sm:text-sm text-charcoal-700 font-serif italic">
               General conversational chat windows are great for writing assistance, but they have major limitations when querying complex documents.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-sans">
-            <div className="p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
-              <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-sans">
+            <div className="p-4 sm:p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
+              <h3 className="font-serif font-bold text-sm sm:text-base text-charcoal-900 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-terracotta-600 shrink-0" />
                 No Silent Document Truncation
               </h3>
@@ -123,8 +123,8 @@ export default function HowItWorks() {
               </p>
             </div>
 
-            <div className="p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
-              <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+            <div className="p-4 sm:p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
+              <h3 className="font-serif font-bold text-sm sm:text-base text-charcoal-900 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-terracotta-600 shrink-0" />
                 Clickable Source Page Citations
               </h3>
@@ -133,8 +133,8 @@ export default function HowItWorks() {
               </p>
             </div>
 
-            <div className="p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
-              <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+            <div className="p-4 sm:p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
+              <h3 className="font-serif font-bold text-sm sm:text-base text-charcoal-900 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-terracotta-600 shrink-0" />
                 Zero Hallucinations Guarantee
               </h3>
@@ -143,8 +143,8 @@ export default function HowItWorks() {
               </p>
             </div>
 
-            <div className="p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
-              <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+            <div className="p-4 sm:p-5 rounded-xl bg-parchment-50 border border-warmborder shadow-2xs space-y-2">
+              <h3 className="font-serif font-bold text-sm sm:text-base text-charcoal-900 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-terracotta-600 shrink-0" />
                 Persistent Multi-File Knowledge
               </h3>

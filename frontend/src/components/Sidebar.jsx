@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Info,
+  X,
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -127,6 +128,8 @@ export default function Sidebar({
   onSelectCheckpoint,
   settings = {},
   onUpdateSettings,
+  isMobileDrawer = false,
+  onCloseMobile = null,
 }) {
   const [dragActive, setDragActive] = useState(false);
   const [showTenantId, setShowTenantId] = useState(false);
@@ -280,7 +283,23 @@ export default function Sidebar({
 
   return (
     <>
-      <aside className="w-80 h-full bg-parchment-200/90 border-r border-warmborder flex flex-col font-sans select-none shrink-0 z-10 shadow-sm backdrop-blur-xs">
+      <aside className={`${isMobileDrawer ? 'w-full h-full' : 'hidden md:flex w-80 h-full border-r'} bg-parchment-200/90 border-warmborder flex flex-col font-sans select-none shrink-0 z-10 shadow-sm backdrop-blur-xs`}>
+        {isMobileDrawer && (
+          <div className="px-4 py-3 bg-parchment-100 border-b border-warmborder flex items-center justify-between font-sans shrink-0">
+            <div className="flex items-center gap-2 font-bold text-sm text-charcoal-900">
+              <Sliders className="w-4 h-4 text-terracotta-600" />
+              <span>RAG Controls & Upload</span>
+            </div>
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-500 hover:text-charcoal-900 rounded-xl hover:bg-parchment-200 transition-colors cursor-pointer"
+              aria-label="Close Controls"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
         {/* Inline Tenant Session Bar at Top */}
         <div className="px-3.5 py-2.5 bg-parchment-50/90 border-b border-warmborder/80 flex items-center justify-between text-xs font-mono text-charcoal-700 shadow-2xs">
           <div className="flex items-center gap-1.5 overflow-hidden pr-2">

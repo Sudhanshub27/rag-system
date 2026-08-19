@@ -139,17 +139,17 @@ export default function ReadingPane({
       )}
 
       {/* Scrollable Manuscript Container */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-8 py-8 w-full space-y-10">
-        <div className="max-w-3xl mx-auto space-y-10">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-3.5 sm:px-8 py-4 sm:py-8 w-full space-y-6 sm:space-y-10">
+        <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10">
           {messages.length === 0 && !isStreaming ? (
-            <div className="h-full flex flex-col items-center justify-center text-center py-24 space-y-4 select-none">
-              <div className="w-16 h-16 rounded-full bg-parchment-200 border border-warmborder flex items-center justify-center text-terracotta-600 shadow-2xs">
-                <BookOpen className="w-8 h-8" />
+            <div className="h-full flex flex-col items-center justify-center text-center py-16 sm:py-24 px-2 space-y-4 select-none">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-parchment-200 border border-warmborder flex items-center justify-center text-terracotta-600 shadow-2xs">
+                <BookOpen className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
-              <h3 className="text-2xl font-serif font-bold text-charcoal-900 tracking-tight">
+              <h3 className="text-xl sm:text-2xl font-serif font-bold text-charcoal-900 tracking-tight">
                 Grounded Document Answers
               </h3>
-              <p className="text-sm text-charcoal-500 max-w-md font-serif leading-relaxed">
+              <p className="text-xs sm:text-sm text-charcoal-500 max-w-md font-serif leading-relaxed">
                 Upload your PDFs or text files to begin. Ask questions or request document breakdowns, and answers will appear formatted with inline citations.
               </p>
             </div>
@@ -157,8 +157,8 @@ export default function ReadingPane({
             messages.map((msg, idx) => {
               if (msg.role === 'user') {
                 return (
-                  <div key={idx} id={`checkpoint-${idx}`} className="pt-6 first:pt-0 border-t border-warmborder/80 first:border-0 scroll-mt-6">
-                    <h3 className="font-serif italic font-semibold text-lg text-charcoal-700 pb-2 border-b border-warmborder flex items-center gap-2">
+                  <div key={idx} id={`checkpoint-${idx}`} className="pt-4 sm:pt-6 first:pt-0 border-t border-warmborder/80 first:border-0 scroll-mt-6">
+                    <h3 className="font-serif italic font-semibold text-base sm:text-lg text-charcoal-700 pb-2 border-b border-warmborder flex items-center gap-2 overflow-wrap-anywhere">
                       <HelpCircle className="w-4 h-4 text-terracotta-600 shrink-0 not-italic" />
                       <span>{msg.content}</span>
                     </h3>
@@ -176,17 +176,17 @@ export default function ReadingPane({
               const uniqueSources = isFallbackAnswer ? [] : deduplicateCitations(msg.citations || []);
 
               return (
-                <article key={idx} className="space-y-4 font-serif text-charcoal-900 leading-relaxed text-base">
+                <article key={idx} className="space-y-4 font-serif text-charcoal-900 leading-relaxed text-sm sm:text-base">
                   {/* Document Answer Body */}
-                  <div className="prose prose-stone max-w-none prose-headings:font-serif prose-headings:font-bold prose-headings:text-charcoal-900 prose-p:leading-relaxed prose-p:mb-4">
+                  <div className="prose prose-stone max-w-none prose-headings:font-serif prose-headings:font-bold prose-headings:text-charcoal-900 prose-p:leading-relaxed prose-p:mb-4 overflow-wrap-anywhere">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h1: ({ children }) => <h1 className="font-serif font-bold text-xl text-charcoal-900 mt-6 mb-3">{children}</h1>,
-                        h2: ({ children }) => <h2 className="font-serif font-bold text-lg text-charcoal-900 mt-5 mb-2">{children}</h2>,
-                        h3: ({ children }) => <h3 className="font-serif font-semibold text-base text-charcoal-900 mt-4 mb-2">{children}</h3>,
+                        h1: ({ children }) => <h1 className="font-serif font-bold text-lg sm:text-xl text-charcoal-900 mt-5 mb-3">{children}</h1>,
+                        h2: ({ children }) => <h2 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 mt-4 mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="font-serif font-semibold text-sm sm:text-base text-charcoal-900 mt-3 mb-2">{children}</h3>,
                         p: ({ children }) => (
-                          <p className="leading-relaxed mb-4">
+                          <p className="leading-relaxed mb-4 overflow-wrap-anywhere">
                             {React.Children.map(children, (child) =>
                               typeof child === 'string' ? (
                                 <FormatInlineCitations
@@ -202,7 +202,7 @@ export default function ReadingPane({
                           </p>
                         ),
                         li: ({ children }) => (
-                          <li className="leading-relaxed mb-1">
+                          <li className="leading-relaxed mb-1 overflow-wrap-anywhere">
                             {React.Children.map(children, (child) =>
                               typeof child === 'string' ? (
                                 <FormatInlineCitations
@@ -216,6 +216,18 @@ export default function ReadingPane({
                               )
                             )}
                           </li>
+                        ),
+                        pre: ({ children }) => (
+                          <div className="overflow-x-auto max-w-full my-3 rounded-xl border border-warmborder bg-parchment-200/80 p-3 font-mono text-xs text-charcoal-900 shadow-2xs">
+                            <pre className="whitespace-pre">{children}</pre>
+                          </div>
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto max-w-full my-4 border border-warmborder rounded-xl shadow-2xs bg-parchment-50">
+                            <table className="min-w-full divide-y divide-warmborder text-xs text-charcoal-900 font-sans">
+                              {children}
+                            </table>
+                          </div>
                         ),
                       }}
                     >

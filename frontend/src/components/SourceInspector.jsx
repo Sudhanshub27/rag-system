@@ -1,14 +1,24 @@
 import React from 'react';
 import { FileText, X, Bookmark } from 'lucide-react';
 
-export default function SourceInspector({ selectedCitation, onClose, debugScores }) {
+export default function SourceInspector({ selectedCitation, onClose, debugScores, isMobileDrawer = false }) {
   if (!selectedCitation) {
     return (
-      <aside className="w-80 shrink-0 bg-parchment-200 border-l border-warmborder flex flex-col h-full text-charcoal-500 select-none font-sans overflow-hidden">
+      <aside className={`${isMobileDrawer ? 'w-full h-full' : 'hidden md:flex w-80 border-l'} shrink-0 bg-parchment-200 border-warmborder flex flex-col h-full text-charcoal-500 select-none font-sans overflow-hidden`}>
         <div className="p-4 border-b border-warmborder font-serif font-bold text-charcoal-900 text-sm flex items-center justify-between bg-parchment-200/90 shrink-0">
           <span className="flex items-center gap-2 font-sans font-semibold text-charcoal-700">
             <Bookmark className="w-4 h-4 text-terracotta-600" /> Source Inspector
           </span>
+          {isMobileDrawer && (
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-500 hover:text-charcoal-900 transition-colors rounded-xl hover:bg-parchment-50 cursor-pointer"
+              title="Close Inspector"
+              aria-label="Close Inspector"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-xs space-y-4">
           <div className="w-12 h-12 rounded-full bg-parchment-50 border border-warmborder flex items-center justify-center text-terracotta-600 shadow-2xs">
@@ -36,7 +46,7 @@ export default function SourceInspector({ selectedCitation, onClose, debugScores
     : [];
 
   return (
-    <aside className="w-80 shrink-0 bg-parchment-200 border-l border-warmborder flex flex-col h-full text-charcoal-900 font-sans shadow-inner overflow-hidden animate-fadeIn">
+    <aside className={`${isMobileDrawer ? 'w-full h-full' : 'hidden md:flex w-80 border-l'} shrink-0 bg-parchment-200 border-warmborder flex flex-col h-full text-charcoal-900 font-sans shadow-inner overflow-hidden animate-fadeIn`}>
       {/* Inspector Header */}
       <div className="p-4 border-b border-warmborder font-serif font-bold text-charcoal-900 text-sm flex items-center justify-between bg-parchment-200/90 shrink-0">
         <span className="flex items-center gap-2">
@@ -45,10 +55,11 @@ export default function SourceInspector({ selectedCitation, onClose, debugScores
         </span>
         <button
           onClick={onClose}
-          className="p-1 text-charcoal-500 hover:text-charcoal-900 transition-colors rounded hover:bg-parchment-50"
+          className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-500 hover:text-charcoal-900 transition-colors rounded-xl hover:bg-parchment-50 cursor-pointer"
           title="Close Inspector"
+          aria-label="Close Inspector"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 

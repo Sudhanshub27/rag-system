@@ -9,27 +9,32 @@ export default function ConfirmModal({
   confirmVariant = 'danger',
   onConfirm,
   onClose,
+  onCancel,
 }) {
   if (!isOpen) return null;
 
+  const handleClose = onClose || onCancel;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/40 backdrop-blur-xs animate-fadeIn font-sans">
-      <div className="bg-parchment-50 border border-warmborder rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/50 backdrop-blur-xs animate-fadeIn font-sans">
+      <div className="bg-parchment-50 border border-warmborder rounded-2xl shadow-2xl max-w-md w-[92vw] sm:w-full p-5 sm:p-6 space-y-4 sm:space-y-5 relative">
         {/* Close Button */}
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1 text-charcoal-500 hover:text-charcoal-900 transition-colors rounded hover:bg-parchment-200"
+          type="button"
+          onClick={handleClose}
+          className="absolute top-3.5 right-3.5 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-500 hover:text-charcoal-900 transition-colors rounded-xl hover:bg-parchment-200 cursor-pointer"
+          aria-label="Close modal"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-start gap-3.5">
+        <div className="flex items-start gap-3.5 pr-8">
           <div className="w-10 h-10 rounded-full bg-rust-100 border border-rust-600/20 flex items-center justify-center text-rust-600 shrink-0">
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div className="space-y-1 pt-0.5">
-            <h3 className="font-serif font-bold text-lg text-charcoal-900 tracking-tight">
+            <h3 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 tracking-tight">
               {title}
             </h3>
             <p className="text-xs text-charcoal-700 leading-relaxed font-sans">
@@ -39,11 +44,11 @@ export default function ConfirmModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-warmborder/80">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-warmborder/80">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-parchment-200 hover:bg-parchment-300/60 text-charcoal-900 text-xs font-semibold border border-warmborder transition-colors"
+            onClick={handleClose}
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-parchment-200 hover:bg-parchment-300/60 text-charcoal-900 text-xs font-semibold border border-warmborder transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -51,11 +56,11 @@ export default function ConfirmModal({
             type="button"
             onClick={() => {
               onConfirm();
-              onClose();
+              if (handleClose) handleClose();
             }}
-            className="px-4 py-2 rounded-lg bg-terracotta-600 hover:bg-terracotta-700 text-parchment-50 text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-colors"
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-parchment-50 text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
             {confirmText}
           </button>
         </div>
