@@ -1,0 +1,27 @@
+# Terms of Use and Source-Available License
+
+Copyright (c) 2026 Sudhanshu Batra. All Rights Reserved.
+
+---
+
+## 📖 Open Code Notice
+The source code contained within this repository is publicly accessible ("open code") on GitHub solely for viewing, personal inspection, educational evaluation, and architectural reference.
+
+## ⛔ Ownership & Usage Restrictions
+This repository and its source code are **NOT Open Source** software under the Open Source Definition (OSI) or any Free/Libre Open Source Software (FLOSS) framework. Public visibility on GitHub does not grant any license or right to use, copy, or redistribute the code.
+
+By viewing, cloning, or interacting with this repository, you acknowledge and agree to the following mandatory terms:
+
+1. **No Right to Execute or Deploy**: You are strictly prohibited from compiling, executing, hosting, running, sublicensing, leasing, selling, or deploying this software or any portion thereof in any production, staging, development, commercial, or non-commercial environment without explicit prior written consent from the copyright holder (Sudhanshu Batra).
+2. **No Right to Modify or Create Derivative Works**: You may not copy, modify, alter, adapt, extract, reverse-engineer, translate, or build derivative works based upon any component of this codebase, database schemas, or algorithms without explicit written consent.
+3. **No Right to Distribute or Mirror**: You may not redistribute, publish, mirror, fork for redistribution, or re-license this software or any associated documentation to any third party or public/private repository without explicit written consent.
+
+---
+
+## ✉️ Permission Requests
+To request consent for commercial or non-commercial usage, deployment rights, or licensing inquiries, please contact the author directly via GitHub ([@Sudhanshub27](https://github.com/Sudhanshub27)).
+
+---
+
+## 🛡️ Disclaimer of Liability
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OR VIEWING OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

@@ -1,0 +1,10 @@
+# robots.txt for Ask My Documents
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /tmp_uploads/
+Disallow: /_next/
+Disallow: /.cache/
+
+# Sitemap location
+Sitemap: https://askmydocuments.com/sitemap.xml

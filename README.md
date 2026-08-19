@@ -3,7 +3,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![React 18+](https://img.shields.io/badge/react-18+-61dafb.svg)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Source-Available](https://img.shields.io/badge/License-Source_Available-red.svg)](LICENSE)
+[![Privacy Policy](https://img.shields.io/badge/Privacy_Policy-Enforced-green.svg)](PRIVACY_POLICY.md)
 [![Tests](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml/badge.svg?job=test)](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml)
 
 A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** web application built with a **FastAPI backend** and **React + Vite frontend**. Designed for private document intelligence, it features **strict multi-tenant data isolation**, **zero data-training compliance**, **local client-side PII anonymization**, **Groq free inference**, **HyDE**, **Multi-Query Expansion**, and **Self-RAG evaluation scoring**.
@@ -17,13 +18,15 @@ A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** we
 - [⚖️ Why RAG vs. Pasting Docs into LLMs](#-why-rag-vs-pasting-documents-into-chatgptclaude)
 - [🧩 Retrieval Architecture & ML Pipeline](#-retrieval-architecture--ml-pipeline)
 - [🧭 Query Routing (Narrow vs Broad)](#-query-routing-narrow-vs-broad)
+- [🌐 SEO Metadata & Search Engine Crawling](#-seo-metadata--search-engine-crawling)
 - [🔐 Data Handling & Security](#-data-handling--security)
 - [📂 Project Structure](#-project-structure)
 - [⚡ Quick Start & Running Locally](#-quick-start--running-locally)
 - [🐳 Docker & Cloud Deployment](#-docker--cloud-deployment)
 - [🔐 Supported LLM Inference Engines](#-supported-llm-inference-engines)
 - [🧪 Testing & CI Compliance](#-testing--ci-compliance)
-- [📝 License](#-license)
+- [📜 Privacy Policy & Terms of Use](#-privacy-policy--terms-of-use)
+- [📝 License & Code Usage Terms](#-license--code-usage-terms)
 
 ---
 
@@ -52,6 +55,7 @@ This application enforces a strict privacy-first architecture to ensure **your d
 3. **Multi-Key Rotation & BYOK**: Supports comma-separated API keys (`GROQ_API_KEY=key1,key2,key3`) for rate limit rotation, as well as Bring Your Own Key (BYOK) for any free or paid API key across Groq, OpenAI, Anthropic Claude, DeepSeek, Google Gemini, and OpenRouter.
 4. **No Account / Cookie-Based Multi-Tenancy**: Anonymous `tenant_id` stored in `HttpOnly` browser cookies isolates database vector collections per user session without requesting email or login credentials.
 5. **Data Control**: Delete individual documents or execute a full tenant data wipe with one click.
+6. **Code Usage Notice**: Source code is open on GitHub for inspection, but is **not open source**. Code cannot be copied, modified, distributed, or deployed without explicit written consent. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
 ---
 
@@ -138,6 +142,16 @@ Specific lookup questions ("what is the refund policy?") and whole-document ques
 
 ---
 
+## 🌐 SEO Metadata & Search Engine Crawling
+
+The application includes full web metadata and search engine crawling configuration for optimal discovery and accessibility:
+
+- **Sitemap (`sitemap.xml`)**: Configured in `frontend/public/sitemap.xml` and root `sitemap.xml` to provide search crawlers with structured URL priority mapping and update frequencies.
+- **Robots Directives (`robots.txt`)**: Configured in `frontend/public/robots.txt` and root `robots.txt` to permit search engine indexers while restricting crawler access to private API endpoints (`/api/`) and temporary upload caches (`/tmp_uploads/`).
+- **Rich Meta Tags**: `frontend/index.html` includes Open Graph (`og:*`), Twitter Card metadata, author credentials, canonical link tags, and structured sitemap declarations.
+
+---
+
 ## 🔐 Data Handling & Security
 
 This project processes documents via third-party inference APIs (Groq default; OpenAI, Anthropic, Gemini optional) hosted on containerized infrastructure (Docker / Cloud VM).
@@ -159,8 +173,11 @@ rag-system/
 │   ├── deps.py                 # Dependency injection & multi-tenant session management
 │   └── routes/                 # SSE API endpoints (upload, query, documents, stats)
 ├── frontend/                   # React 18 + Vite Frontend App
+│   ├── public/                 # Static web assets
+│   │   ├── robots.txt          # Crawler instructions & API restrictions
+│   │   └── sitemap.xml         # Site map XML for web metadata
 │   ├── src/                    # Components (Navbar, Sidebar, ReadingPane, SourceInspector)
-│   ├── index.html              # Main HTML page
+│   ├── index.html              # Main HTML page with OpenGraph & SEO tags
 │   ├── vite.config.js          # Vite configuration & API proxy
 │   └── package.json            # Frontend dependencies
 ├── ingestion/                  # Document Ingestion Pipeline
@@ -192,6 +209,10 @@ rag-system/
 │   └── integration/            # End-to-end integration tests
 ├── scripts/                    # Automation Scripts
 │   └── ci_check.sh             # Local pre-push CI test script
+├── LICENSE                     # Proprietary Source-Available License
+├── PRIVACY_POLICY.md           # Privacy commitments & code usage terms
+├── robots.txt                  # Root web crawler instructions
+├── sitemap.xml                 # Root sitemap XML metadata
 ├── pipeline.py                 # Main RAGPipeline facade
 ├── cli.py                      # Multi-tenant CLI tool
 ├── docker-compose.yml          # Multi-container Docker orchestrator
@@ -338,6 +359,22 @@ Run the automated suite (unit tests, coverage, and linting):
 
 ---
 
-## 📝 License
+## 📜 Privacy Policy & Terms of Use
 
-MIT License — see [LICENSE](LICENSE) for details.
+Please read [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details on:
+- **Zero-Training AI Commitments**: Guaranteed data protection on API inputs/outputs.
+- **Client-Side PII Scrubbing**: Redaction of personal info prior to transmission.
+- **Multi-Tenant Cookie Isolation**: Scoped database collections per user session.
+- **Code Usage Restrictions**: Source code is open for inspection, but **NOT open source** and cannot be used, modified, or deployed without consent.
+
+---
+
+## 📝 License & Code Usage Terms
+
+Copyright (c) 2026 Sudhanshu Batra. All Rights Reserved.
+
+This project is licensed under a **Source-Available / Proprietary License** — see [LICENSE](LICENSE) for details.
+
+- **Open Code Access**: The source code is publicly accessible on GitHub for transparency, security inspection, and educational reference.
+- **NOT Open Source**: This software is **NOT open source** under OSI definitions.
+- **Usage Restrictions**: You are strictly prohibited from copying, modifying, distributing, hosting, sublicensing, selling, or deploying this codebase or any portion thereof without explicit prior written consent from the author (**Sudhanshu Batra**).
