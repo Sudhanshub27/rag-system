@@ -16,13 +16,14 @@ export default function QuestionBar({ onSendMessage, isStreaming, followups, onS
       {/* Understated Follow-up Suggestion Pills */}
       {followups && followups.length > 0 && !isStreaming && (
         <div className="flex flex-wrap items-center gap-1.5 max-w-3xl mx-auto px-1 text-xs">
-          <span className="text-charcoal-500 font-medium font-sans text-[11px]">Suggested topics:</span>
+          <span className="text-charcoal-700 font-bold font-sans text-[11px]">Suggested topics:</span>
           {followups.map((f, i) => (
             <button
               key={i}
               type="button"
               onClick={() => onSelectFollowup(f)}
-              className="px-2.5 py-1 rounded-full bg-parchment-50 border border-warmborder text-terracotta-600 hover:text-terracotta-700 hover:border-terracotta-600/50 font-serif italic text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+              aria-label={`Ask suggested topic: ${f}`}
+              className="px-3 py-1.5 min-h-[36px] rounded-full bg-parchment-50 border border-warmborder text-terracotta-700 hover:text-terracotta-800 hover:border-terracotta-600/50 font-serif italic text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
             >
               <span>"{f}"</span>
             </button>
@@ -33,14 +34,16 @@ export default function QuestionBar({ onSendMessage, isStreaming, followups, onS
       {/* Input Bar */}
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex items-center gap-2 w-full min-w-0">
         <div className="relative flex-1 flex items-center min-w-0">
-          <BookOpen className="absolute left-3.5 w-4 h-4 text-charcoal-500 pointer-events-none shrink-0" />
+          <BookOpen className="absolute left-3.5 w-4 h-4 text-charcoal-700 pointer-events-none shrink-0" />
           <input
+            id="question-bar-input"
+            aria-label="Ask a research question or request a section breakdown"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a research question or request a section breakdown..."
             disabled={isStreaming}
-            className="w-full bg-parchment-50 border border-warmborder rounded-xl pl-10 pr-4 py-3 min-h-[44px] text-sm text-charcoal-900 placeholder-charcoal-500 focus:outline-none focus:border-terracotta-600 focus:ring-1 focus:ring-terracotta-600 transition-all font-sans disabled:opacity-50 shadow-2xs min-w-0"
+            className="w-full bg-parchment-50 border border-warmborder rounded-xl pl-10 pr-4 py-3 min-h-[44px] text-sm text-charcoal-900 placeholder:text-charcoal-600 focus:outline-none focus:border-terracotta-600 focus:ring-1 focus:ring-terracotta-600 transition-all font-sans disabled:opacity-50 shadow-2xs min-w-0"
           />
         </div>
         <button

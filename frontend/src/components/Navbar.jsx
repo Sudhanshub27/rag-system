@@ -46,7 +46,7 @@ export default function Navbar() {
       </Link>
 
       {/* Desktop Navigation Links */}
-      <nav className="hidden md:flex items-center gap-2 text-xs font-medium text-charcoal-700">
+      <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-charcoal-800">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -54,15 +54,16 @@ export default function Navbar() {
               key={item.to}
               to={item.to}
               end={item.to === '/'}
+              aria-label={item.label}
               className={({ isActive }) =>
-                `px-3.5 py-1.5 rounded-md flex items-center gap-2 transition-all ${
+                `min-h-[44px] px-3.5 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
                   isActive
-                    ? 'bg-parchment-50 text-terracotta-600 font-semibold border border-warmborder/80 shadow-2xs'
-                    : 'hover:bg-parchment-200/80 hover:text-charcoal-900'
+                    ? 'bg-parchment-50 text-terracotta-700 font-bold border border-warmborder/80 shadow-2xs'
+                    : 'text-charcoal-800 hover:bg-parchment-200/80 hover:text-charcoal-900'
                 }`
               }
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-4 h-4 text-terracotta-700 shrink-0" />
               <span>{item.label}</span>
             </NavLink>
           );

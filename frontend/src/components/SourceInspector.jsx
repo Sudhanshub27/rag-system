@@ -66,15 +66,15 @@ export default function SourceInspector({ selectedCitation, onClose, debugScores
       <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
         {/* Source File Metadata Card */}
         <div className="bg-parchment-50 border border-warmborder rounded-lg p-3.5 space-y-2 shadow-2xs">
-          <div className="text-[10px] uppercase font-semibold text-charcoal-500 tracking-wider font-sans">Document Metadata</div>
+          <div className="text-[10px] uppercase font-bold text-charcoal-700 tracking-wider font-sans">Document Metadata</div>
           <div className="font-serif font-bold text-charcoal-900 text-sm truncate flex items-center gap-2" title={filename}>
-            <FileText className="w-4 h-4 text-terracotta-600 shrink-0" />
+            <FileText className="w-4 h-4 text-terracotta-700 shrink-0" />
             <span className="truncate">{filename}</span>
           </div>
-          <div className="flex justify-between items-center text-charcoal-700 text-xs pt-2 border-t border-warmborder font-serif">
+          <div className="flex justify-between items-center text-charcoal-800 text-xs pt-2 border-t border-warmborder font-serif">
             <span>Page Number: <strong className="text-charcoal-900 font-sans font-semibold">{page}</strong></span>
             {score !== undefined && debugScores && (
-              <span className="text-sage-600 font-sans font-semibold font-mono">
+              <span className="text-sage-700 font-sans font-semibold font-mono">
                 {(score * 100).toFixed(0)}% Relevance
               </span>
             )}
@@ -83,11 +83,11 @@ export default function SourceInspector({ selectedCitation, onClose, debugScores
 
         {/* Page Excerpt Text */}
         <div className="space-y-2">
-          <div className="text-[10px] uppercase font-semibold text-charcoal-500 tracking-wider font-sans">
+          <div className="text-[10px] uppercase font-bold text-charcoal-700 tracking-wider font-sans">
             Original Document Excerpt
           </div>
           {displayTextChunks.length === 0 ? (
-            <div className="bg-parchment-50 border border-warmborder rounded-lg p-3 text-charcoal-500 italic text-xs">
+            <div className="bg-parchment-50 border border-warmborder rounded-lg p-3 text-charcoal-700 italic text-xs">
               No excerpt text recorded for this chunk.
             </div>
           ) : (
@@ -96,7 +96,7 @@ export default function SourceInspector({ selectedCitation, onClose, debugScores
                 key={idx}
                 className="bg-parchment-50 border border-warmborder rounded-lg p-3.5 text-charcoal-900 leading-relaxed font-serif text-xs whitespace-pre-wrap shadow-2xs space-y-1"
               >
-                <div className="text-[9px] font-mono text-terracotta-600 uppercase tracking-wider font-bold mb-1">
+                <div className="text-[9px] font-mono text-terracotta-700 uppercase tracking-wider font-bold mb-1">
                   Excerpt #{idx + 1}
                 </div>
                 <div>{chunkText}</div>

@@ -301,12 +301,12 @@ export default function Sidebar({
           </div>
         )}
         {/* Inline Tenant Session Bar at Top */}
-        <div className="px-3.5 py-2.5 bg-parchment-50/90 border-b border-warmborder/80 flex items-center justify-between text-xs font-mono text-charcoal-700 shadow-2xs">
+        <div className="px-3.5 py-2.5 bg-parchment-50/90 border-b border-warmborder/80 flex items-center justify-between text-xs font-mono text-charcoal-800 shadow-2xs">
           <div className="flex items-center gap-1.5 overflow-hidden pr-2">
-            <div className="p-1 rounded-md bg-terracotta-600/10 border border-terracotta-600/20 text-terracotta-600">
+            <div className="p-1 rounded-md bg-terracotta-600/10 border border-terracotta-600/20 text-terracotta-700">
               <Lock className="w-3.5 h-3.5 shrink-0" />
             </div>
-            <span className="font-sans font-semibold text-charcoal-500 shrink-0">Tenant:</span>
+            <span className="font-sans font-semibold text-charcoal-700 shrink-0">Tenant:</span>
             <span className="truncate text-charcoal-900 font-medium select-all" title={tenantId}>
               {showTenantId ? tenantId : maskedTenantId}
             </span>
@@ -315,20 +315,22 @@ export default function Sidebar({
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setShowTenantId(!showTenantId)}
-              className="p-1.5 hover:bg-parchment-200 text-charcoal-500 hover:text-charcoal-900 rounded-lg transition-colors cursor-pointer"
+              className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-parchment-200 text-charcoal-700 hover:text-charcoal-900 rounded-lg transition-colors cursor-pointer"
               title={showTenantId ? 'Hide Tenant ID' : 'Show Tenant ID'}
+              aria-label={showTenantId ? 'Hide Tenant ID' : 'Show Tenant ID'}
             >
-              {showTenantId ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showTenantId ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
             <button
               onClick={handleCopyTenantId}
-              className="p-1.5 hover:bg-parchment-200 text-charcoal-500 hover:text-terracotta-600 rounded-lg transition-colors cursor-pointer"
+              className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-parchment-200 text-charcoal-700 hover:text-terracotta-700 rounded-lg transition-colors cursor-pointer"
               title="Copy Tenant ID"
+              aria-label="Copy Tenant ID"
             >
               {copiedTenantId ? (
-                <Check className="w-3.5 h-3.5 text-sage-600" />
+                <Check className="w-4 h-4 text-sage-700" />
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-4 h-4" />
               )}
             </button>
           </div>
@@ -339,19 +341,21 @@ export default function Sidebar({
 
           {/* LLM Engine Selection */}
           <div className="space-y-2">
-            <div className="text-[11px] font-bold text-charcoal-600 uppercase tracking-wider font-sans flex items-center justify-between">
+            <div className="text-[11px] font-bold text-charcoal-700 uppercase tracking-wider font-sans flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-terracotta-600" /> LLM Provider & Key
+                <Key className="w-3.5 h-3.5 text-terracotta-700" /> LLM Provider & Key
               </span>
             </div>
             
-            <div className="space-y-2 bg-parchment-50/90 border border-warmborder p-3 rounded-xl shadow-2xs">
+            <div className="space-y-2.5 bg-parchment-50/90 border border-warmborder p-3 rounded-xl shadow-2xs">
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-charcoal-500 tracking-wider">Provider</label>
+                <label htmlFor="llm-provider-select" className="text-[10px] font-bold uppercase text-charcoal-700 tracking-wider">Provider</label>
                 <select
+                  id="llm-provider-select"
+                  aria-label="LLM Provider Selection"
                   value={settings.provider || 'groq'}
                   onChange={handleProviderChange}
-                  className="w-full text-xs bg-white border border-warmborder/90 rounded-lg p-2 text-charcoal-900 font-sans focus:outline-none focus:border-terracotta-600 focus:ring-2 focus:ring-terracotta-600/15 shadow-2xs cursor-pointer font-medium"
+                  className="w-full min-h-[44px] text-xs bg-white border border-warmborder/90 rounded-lg p-2.5 text-charcoal-900 font-sans focus:outline-none focus:border-terracotta-600 focus:ring-2 focus:ring-terracotta-600/15 shadow-2xs cursor-pointer font-medium"
                 >
                   <option value="groq">Groq API (Default - Free 70B & Zero-Training)</option>
                   <option value="openai">OpenAI API</option>
@@ -363,34 +367,40 @@ export default function Sidebar({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-charcoal-500 tracking-wider">API Key</label>
+                <label htmlFor="llm-api-key-input" className="text-[10px] font-bold uppercase text-charcoal-700 tracking-wider">API Key</label>
                 <div className="relative flex items-center">
                   <input
+                    id="llm-api-key-input"
+                    aria-label="LLM API Key"
                     type={showApiKey ? 'text' : 'password'}
                     value={settings.apiKey || ''}
                     onChange={handleApiKeyChange}
                     placeholder={settings.provider === 'groq' || !settings.provider ? "Groq active (Optional custom key)..." : `Paste ${settings.provider ? settings.provider.toUpperCase() : 'API'} key...`}
-                    className="w-full text-xs bg-white border border-warmborder/90 rounded-lg p-2 pr-8 text-charcoal-900 font-mono placeholder:text-charcoal-400 focus:outline-none focus:border-terracotta-600 focus:ring-2 focus:ring-terracotta-600/15 shadow-2xs"
+                    className="w-full min-h-[44px] text-xs bg-white border border-warmborder/90 rounded-lg p-2.5 pr-10 text-charcoal-900 font-mono placeholder:text-charcoal-600 focus:outline-none focus:border-terracotta-600 focus:ring-2 focus:ring-terracotta-600/15 shadow-2xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-2 text-charcoal-400 hover:text-charcoal-900 p-1 rounded transition-colors cursor-pointer"
+                    className="absolute right-1 text-charcoal-600 hover:text-charcoal-900 p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded transition-colors cursor-pointer"
+                    aria-label={showApiKey ? 'Hide API Key' : 'Show API Key'}
+                    title={showApiKey ? 'Hide API Key' : 'Show API Key'}
                   >
-                    {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               {/* Optional Model Override */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-charcoal-500 tracking-wider">Optional Model ID Override</label>
+                <label htmlFor="model-override-input" className="text-[10px] font-bold uppercase text-charcoal-700 tracking-wider">Optional Model ID Override</label>
                 <input
+                  id="model-override-input"
+                  aria-label="Optional Model ID Override"
                   type="text"
                   value={settings.model || ''}
                   onChange={(e) => handleModelChange(e.target.value)}
                   placeholder="e.g. claude-3-5-sonnet, gpt-4o, o3-mini..."
-                  className="w-full text-[11px] bg-white border border-warmborder/90 rounded-lg p-1.5 text-charcoal-900 font-mono placeholder:text-charcoal-400 focus:outline-none focus:border-terracotta-600 focus:ring-2 focus:ring-terracotta-600/15 shadow-2xs"
+                  className="w-full min-h-[44px] text-xs bg-white border border-warmborder/90 rounded-lg p-2.5 text-charcoal-900 font-mono placeholder:text-charcoal-600 focus:outline-none focus:border-terracotta-600 focus:ring-2 focus:ring-terracotta-600/15 shadow-2xs"
                 />
               </div>
 
@@ -538,51 +548,56 @@ export default function Sidebar({
 
           {/* Indexed Documents List */}
           <div className="space-y-2">
-            <div className="text-[11px] font-bold text-charcoal-600 uppercase tracking-wider font-sans flex justify-between items-center">
+            <div className="text-[11px] font-bold text-charcoal-700 uppercase tracking-wider font-sans flex justify-between items-center">
               <span>Indexed Documents</span>
-              <span className="text-[10px] text-charcoal-500 font-mono font-semibold">({documents.length})</span>
+              <span className="text-[10px] text-charcoal-700 font-mono font-semibold">({documents.length})</span>
             </div>
             {documents.length === 0 ? (
-              <div className="text-xs text-charcoal-500 italic p-3 bg-parchment-50/60 rounded-xl border border-warmborder/60 text-center">
+              <div className="text-xs text-charcoal-700 italic p-3 bg-parchment-50/60 rounded-xl border border-warmborder/60 text-center">
                 No documents indexed yet. Upload a file above.
               </div>
             ) : (
               <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                {documents.map((doc, idx) => (
-                  <div
-                    key={idx}
-                    className="group flex items-center justify-between p-2 px-2.5 rounded-lg bg-parchment-50 border border-warmborder text-xs text-charcoal-900 font-sans shadow-2xs hover:border-terracotta-600/40 transition-colors"
-                  >
-                    <span className="truncate max-w-[170px] flex items-center gap-2" title={doc.filename || doc}>
-                      <FileText className="w-3.5 h-3.5 text-terracotta-600 shrink-0" />
-                      <span className="truncate font-medium">{doc.filename || doc}</span>
-                    </span>
-                    <button
-                      onClick={() => promptDeleteDocument(doc.filename || doc)}
-                      className="p-1 text-charcoal-400 hover:text-rust-600 rounded transition-colors opacity-80 group-hover:opacity-100 cursor-pointer"
-                      title="Delete document"
+                {documents.map((doc, idx) => {
+                  const docName = doc.filename || doc;
+                  return (
+                    <div
+                      key={idx}
+                      className="group flex items-center justify-between p-2 px-2.5 rounded-lg bg-parchment-50 border border-warmborder text-xs text-charcoal-900 font-sans shadow-2xs hover:border-terracotta-600/40 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <span className="truncate max-w-[170px] flex items-center gap-2" title={docName}>
+                        <FileText className="w-3.5 h-3.5 text-terracotta-700 shrink-0" />
+                        <span className="truncate font-medium">{docName}</span>
+                      </span>
+                      <button
+                        onClick={() => promptDeleteDocument(docName)}
+                        className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center text-charcoal-600 hover:text-rust-600 rounded transition-colors opacity-80 group-hover:opacity-100 cursor-pointer"
+                        title={`Delete document ${docName}`}
+                        aria-label={`Delete document ${docName}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
           {/* Recent Questions Session History */}
           <div className="space-y-2">
-            <div className="text-[11px] font-bold text-charcoal-600 uppercase tracking-wider font-sans flex items-center justify-between">
+            <div className="text-[11px] font-bold text-charcoal-700 uppercase tracking-wider font-sans flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <History className="w-3.5 h-3.5 text-terracotta-600" /> Recent Questions
+                <History className="w-3.5 h-3.5 text-terracotta-700" /> Recent Questions
               </span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-charcoal-500 font-mono font-semibold">({recentQuestions.length})</span>
+                <span className="text-[10px] text-charcoal-700 font-mono font-semibold">({recentQuestions.length})</span>
                 {recentQuestions.length > 0 && onClearHistory && (
                   <button
                     onClick={onClearHistory}
                     title="Clear Question History"
-                    className="p-1 text-charcoal-400 hover:text-rust-600 rounded transition-colors cursor-pointer"
+                    aria-label="Clear Question History"
+                    className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center text-charcoal-600 hover:text-rust-600 rounded transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

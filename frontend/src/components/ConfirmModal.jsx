@@ -22,8 +22,9 @@ export default function ConfirmModal({
         <button
           type="button"
           onClick={handleClose}
-          className="absolute top-3.5 right-3.5 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-500 hover:text-charcoal-900 transition-colors rounded-xl hover:bg-parchment-200 cursor-pointer"
-          aria-label="Close modal"
+          className="absolute top-3.5 right-3.5 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-700 hover:text-charcoal-900 transition-colors rounded-xl hover:bg-parchment-200 cursor-pointer"
+          aria-label="Close confirmation dialog"
+          title="Close dialog"
         >
           <X className="w-5 h-5" />
         </button>
@@ -37,7 +38,7 @@ export default function ConfirmModal({
             <h3 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 tracking-tight">
               {title}
             </h3>
-            <p className="text-xs text-charcoal-700 leading-relaxed font-sans">
+            <p className="text-xs text-charcoal-800 leading-relaxed font-sans">
               {message}
             </p>
           </div>
@@ -48,6 +49,7 @@ export default function ConfirmModal({
           <button
             type="button"
             onClick={handleClose}
+            aria-label="Cancel confirmation"
             className="min-h-[44px] px-4 py-2.5 rounded-xl bg-parchment-200 hover:bg-parchment-300/60 text-charcoal-900 text-xs font-semibold border border-warmborder transition-colors cursor-pointer"
           >
             Cancel
@@ -58,6 +60,7 @@ export default function ConfirmModal({
               onConfirm();
               if (handleClose) handleClose();
             }}
+            aria-label={confirmText}
             className="min-h-[44px] px-4 py-2.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-parchment-50 text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />

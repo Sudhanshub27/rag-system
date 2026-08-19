@@ -66,8 +66,65 @@ html, body, #root {
   animation: slideInBottom 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Utility to ensure text wraps on narrow phone screens */
+/* Utility to ensure text wraps on narrow phone screens at word boundaries */
 .overflow-wrap-anywhere {
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Spacious Table Styling Failsafe */
+.prose table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 0.875rem;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .prose table {
+    min-width: 100%;
+  }
+}
+
+.prose th {
+  padding: 0.75rem 0.875rem !important;
+  text-align: left;
+  font-weight: 700;
+  background-color: rgba(220, 210, 190, 0.6);
+  border-bottom: 2px solid rgba(138, 127, 110, 0.4);
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 640px) {
+  .prose th {
+    padding: 0.875rem 1.25rem !important;
+  }
+}
+
+.prose td {
+  padding: 0.75rem 0.875rem !important;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(138, 127, 110, 0.25);
+  border-right: 1px solid rgba(138, 127, 110, 0.25);
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 640px) {
+  .prose td {
+    padding: 1rem 1.25rem !important;
+  }
+}
+
+.prose td:last-child {
+  border-right: none;
+}
+
+.prose tr:last-child td {
+  border-bottom: none;
 }

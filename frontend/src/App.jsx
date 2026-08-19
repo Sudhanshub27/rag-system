@@ -312,9 +312,10 @@ function MainWorkspace() {
         <button
           type="button"
           onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Open Controls & Document Uploader"
           className="flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl bg-parchment-50 border border-warmborder text-charcoal-900 hover:border-terracotta-600 shadow-2xs transition-colors cursor-pointer"
         >
-          <Sliders className="w-4 h-4 text-terracotta-600 shrink-0" />
+          <Sliders className="w-4 h-4 text-terracotta-700 shrink-0" />
           <span>Controls & Upload</span>
           {documents.length > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-terracotta-100 text-terracotta-700 font-mono text-[10px] font-bold">
@@ -326,13 +327,14 @@ function MainWorkspace() {
         <button
           type="button"
           onClick={() => setMobileSourceOpen(true)}
+          aria-label="Open Source Inspector Panel"
           className={`flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
             selectedCitation
               ? 'bg-terracotta-100 border-terracotta-600/40 text-terracotta-700 font-semibold'
-              : 'bg-parchment-50 border-warmborder text-charcoal-700 hover:text-charcoal-900'
+              : 'bg-parchment-50 border-warmborder text-charcoal-800 hover:text-charcoal-900'
           }`}
         >
-          <Bookmark className="w-4 h-4 text-terracotta-600 shrink-0" />
+          <Bookmark className="w-4 h-4 text-terracotta-700 shrink-0" />
           <span>{selectedCitation ? `Source [${selectedCitation.id || 1}]` : 'Sources'}</span>
         </button>
       </div>

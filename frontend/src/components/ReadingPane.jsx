@@ -218,16 +218,63 @@ export default function ReadingPane({
                           </li>
                         ),
                         pre: ({ children }) => (
-                          <div className="overflow-x-auto max-w-full my-3 rounded-xl border border-warmborder bg-parchment-200/80 p-3 font-mono text-xs text-charcoal-900 shadow-2xs">
+                          <div className="overflow-x-auto max-w-full my-4 rounded-xl border border-warmborder bg-parchment-200/80 p-3.5 sm:p-4 font-mono text-xs text-charcoal-900 shadow-2xs">
                             <pre className="whitespace-pre">{children}</pre>
                           </div>
                         ),
                         table: ({ children }) => (
-                          <div className="overflow-x-auto max-w-full my-4 border border-warmborder rounded-xl shadow-2xs bg-parchment-50">
-                            <table className="min-w-full divide-y divide-warmborder text-xs text-charcoal-900 font-sans">
+                          <div className="overflow-x-auto max-w-full my-5 rounded-2xl border border-warmborder/90 bg-parchment-50 shadow-sm transition-all overflow-hidden">
+                            <table className="min-w-[480px] sm:min-w-full divide-y divide-warmborder text-xs sm:text-sm text-charcoal-900 font-sans border-collapse">
                               {children}
                             </table>
                           </div>
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-parchment-200/90 border-b-2 border-warmborder">
+                            {children}
+                          </thead>
+                        ),
+                        tbody: ({ children }) => (
+                          <tbody className="divide-y divide-warmborder/60 bg-parchment-50/60">
+                            {children}
+                          </tbody>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="hover:bg-parchment-100/80 transition-colors duration-150">
+                            {children}
+                          </tr>
+                        ),
+                        th: ({ children }) => (
+                          <th className="px-3.5 py-3 sm:px-5 sm:py-3.5 font-serif font-bold text-charcoal-900 text-xs sm:text-sm text-left align-top border-r last:border-r-0 border-warmborder/60 select-none bg-parchment-200/70 [overflow-wrap:break-word] [word-break:normal]">
+                            {React.Children.map(children, (child) =>
+                              typeof child === 'string' ? (
+                                <FormatInlineCitations
+                                  text={child}
+                                  citations={uniqueSources}
+                                  onSelectCitation={onSelectCitation}
+                                  debugScores={debugScores}
+                                />
+                              ) : (
+                                child
+                              )
+                            )}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="px-3.5 py-3 sm:px-5 sm:py-4 text-xs sm:text-sm text-charcoal-900 leading-relaxed align-top border-r last:border-r-0 border-warmborder/40 [overflow-wrap:break-word] [word-break:normal]">
+                            {React.Children.map(children, (child) =>
+                              typeof child === 'string' ? (
+                                <FormatInlineCitations
+                                  text={child}
+                                  citations={uniqueSources}
+                                  onSelectCitation={onSelectCitation}
+                                  debugScores={debugScores}
+                                />
+                              ) : (
+                                child
+                              )
+                            )}
+                          </td>
                         ),
                       }}
                     >
@@ -257,13 +304,14 @@ export default function ReadingPane({
                           <button
                             key={`${src.source}-${src.page}`}
                             onClick={() => onSelectCitation(src)}
-                            className="px-2.5 py-1 rounded-md bg-parchment-50 border border-warmborder text-charcoal-700 hover:border-terracotta-600 hover:text-terracotta-600 text-xs font-serif italic transition-all flex items-center gap-1.5 shadow-2xs"
+                            aria-label={`View citation source ${src.source} page ${src.page}`}
+                            className="px-3 py-1.5 min-h-[38px] rounded-md bg-parchment-50 border border-warmborder text-charcoal-800 hover:border-terracotta-600 hover:text-terracotta-700 text-xs font-serif italic transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
                           >
-                            <span className="font-mono text-[10px] not-italic text-terracotta-600 font-bold">[{src.id}]</span>
+                            <span className="font-mono text-[10px] not-italic text-terracotta-700 font-bold">[{src.id}]</span>
                             <span>{src.source}</span>
-                            <span className="text-charcoal-500 not-italic text-[11px]">(p. {src.page})</span>
+                            <span className="text-charcoal-700 not-italic text-[11px]">(p. {src.page})</span>
                             {debugScores && (
-                              <span className="font-mono text-[10px] not-italic text-sage-600">{(src.score * 100).toFixed(0)}%</span>
+                              <span className="font-mono text-[10px] not-italic text-sage-700">{(src.score * 100).toFixed(0)}%</span>
                             )}
                           </button>
                         ))}
@@ -272,20 +320,22 @@ export default function ReadingPane({
                   )}
 
                   {/* Action Controls */}
-                  <div className="flex items-center gap-4 pt-2 text-xs font-sans text-charcoal-500">
+                  <div className="flex items-center gap-4 pt-2 text-xs font-sans text-charcoal-700">
                     <button
                       onClick={() => handleCopy(msg.content, idx)}
-                      className="hover:text-terracotta-600 flex items-center gap-1 transition-colors"
+                      aria-label="Copy answer to clipboard"
+                      className="min-h-[44px] hover:text-terracotta-700 flex items-center gap-1.5 px-2 -mx-2 rounded-lg hover:bg-parchment-200/60 transition-colors cursor-pointer"
                     >
-                      {copiedId === idx ? <Check className="w-3.5 h-3.5 text-sage-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedId === idx ? 'Copied' : 'Copy answer'}
+                      {copiedId === idx ? <Check className="w-4 h-4 text-sage-700" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedId === idx ? 'Copied' : 'Copy answer'}</span>
                     </button>
                     <button
                       onClick={() => handleExportMarkdown(msg.content, idx)}
-                      className="hover:text-terracotta-600 flex items-center gap-1 transition-colors"
+                      aria-label="Export answer as markdown file"
+                      className="min-h-[44px] hover:text-terracotta-700 flex items-center gap-1.5 px-2 -mx-2 rounded-lg hover:bg-parchment-200/60 transition-colors cursor-pointer"
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      Export Markdown
+                      <Download className="w-4 h-4" />
+                      <span>Export Markdown</span>
                     </button>
                   </div>
                 </article>

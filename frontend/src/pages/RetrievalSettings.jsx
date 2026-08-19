@@ -7,18 +7,18 @@ export default function RetrievalSettings() {
       <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10 pb-16">
         {/* Header */}
         <div className="border-b border-warmborder pb-5 sm:pb-6 space-y-2">
-          <div className="flex items-center gap-2 text-terracotta-600 font-semibold text-xs uppercase tracking-wider font-sans">
+          <div className="flex items-center gap-2 text-terracotta-700 font-bold text-xs uppercase tracking-wider font-sans">
             <Sliders className="w-4 h-4 shrink-0" /> Information Retrieval Guide
           </div>
           <h1 className="font-serif font-bold text-2xl sm:text-3xl text-charcoal-900 tracking-tight">
             Retrieval Settings, Explained
           </h1>
-          <p className="font-serif italic text-charcoal-700 text-sm sm:text-base">
+          <p className="font-serif italic text-charcoal-800 text-sm sm:text-base">
             These toggles change how the system searches your documents before answering.
           </p>
         </div>
 
-        <p className="text-sm text-charcoal-700 leading-relaxed font-sans">
+        <p className="text-sm text-charcoal-800 leading-relaxed font-sans">
           None of these toggles are required — the default configuration works well for most questions. Here is what each feature does, why it helps, and how query intent (Narrow vs. Broad) is handled automatically.
         </p>
 
