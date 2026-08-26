@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   HelpCircle,
   FileText,
@@ -11,7 +12,10 @@ import {
   Code,
   FileCode,
   FileBox,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
+import LandingFooter from '../components/landing/LandingFooter';
 
 export default function FAQ() {
   const fileCategories = [
@@ -60,7 +64,7 @@ export default function FAQ() {
   const faqs = [
     {
       q: 'Which LLM providers are supported, and is my data ever used for training?',
-      a: 'We strictly support only LLM options with documented zero-training policies: Groq API (Free & Paid zero-training policy), Ollama (100% Offline Local), OpenAI API (never trained on API data), Anthropic Commercial API (never trained on API data), and DeepSeek API (zero model training policy). Consumer free tiers that log data for model training (like Google AI Studio free tier) are intentionally excluded.',
+      a: 'We strictly support LLM options with documented zero-training policies: Groq API (Free & Paid zero-training policy), Ollama (100% Offline Local), OpenAI API (never trained on API data), Anthropic Commercial API (never trained on API data), and DeepSeek API (zero model training policy). Consumer free tiers that log data for model training are excluded.',
       icon: ShieldCheck,
     },
     {
@@ -70,7 +74,7 @@ export default function FAQ() {
     },
     {
       q: 'Will it make things up (hallucinate)?',
-      a: 'No — the system only answers from passages it actually retrieved from your uploaded documents. If nothing relevant is found, it tells you that, rather than guessing from general knowledge. Every claim in an answer is tied to a citation you can check yourself.',
+      a: 'The system is designed to answer strictly from passages retrieved from your uploaded documents. If relevant information is not found in your files, it indicates that rather than generating an ungrounded guess.',
       icon: CheckCircle,
     },
     {
@@ -90,25 +94,38 @@ export default function FAQ() {
     },
     {
       q: 'Can I use this on my phone and see the same documents I uploaded on my laptop?',
-      a: "Not currently — your documents are tied to the browser you uploaded them from via an anonymous browser session key, not to you as a logged-in user, so a different browser or device won't have access to the same data.",
+      a: "Not currently — your documents are tied to the browser session key created on that device, not to a user login account, so a different browser or device won't share the same local session key.",
       icon: Smartphone,
     },
   ];
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans px-4 sm:px-8 py-6 sm:py-10">
-      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10 pb-16">
-        {/* Header */}
-        <div className="border-b border-warmborder pb-5 sm:pb-6 space-y-2">
-          <div className="flex items-center gap-2 text-terracotta-600 font-semibold text-xs uppercase tracking-wider font-sans">
-            <HelpCircle className="w-4 h-4 shrink-0" /> Frequently Asked Questions
+    <div className="w-full h-full overflow-y-auto bg-parchment-100 text-charcoal-900 font-sans antialiased select-none">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 sm:space-y-14">
+        {/* Contextual Header */}
+        <div className="space-y-4 border-b border-warmborder pb-6 sm:pb-8">
+          <div className="flex items-center justify-between">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-terracotta-700 hover:text-terracotta-800 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Home</span>
+            </Link>
+            <span className="text-xs uppercase font-mono font-bold tracking-wider text-terracotta-600 flex items-center gap-1.5">
+              <HelpCircle className="w-4 h-4 text-terracotta-600" />
+              Frequently Asked Questions
+            </span>
           </div>
-          <h1 className="font-serif font-bold text-2xl sm:text-3xl text-charcoal-900 tracking-tight">
-            FAQ
-          </h1>
-          <p className="font-serif italic text-charcoal-700 text-sm sm:text-base">
-            Common questions about document isolation, Tenant IDs, file formats, and privacy.
-          </p>
+
+          <div className="space-y-2">
+            <h1 className="font-serif font-bold text-3xl sm:text-4xl text-charcoal-900 tracking-tight">
+              FAQ
+            </h1>
+            <p className="font-serif italic text-charcoal-700 text-base sm:text-lg">
+              Common questions about document isolation, Tenant IDs, file formats, and privacy.
+            </p>
+          </div>
         </div>
 
         {/* FAQ Cards */}
@@ -118,27 +135,29 @@ export default function FAQ() {
             return (
               <div
                 key={index}
-                className="p-4 sm:p-6 rounded-xl bg-parchment-50 border border-warmborder shadow-xs space-y-3"
+                className="p-5 sm:p-6 rounded-2xl bg-parchment-50 border border-warmborder shadow-2xs space-y-3 hover:border-terracotta-600/40 transition-all"
               >
-                <h3 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 flex items-start gap-2.5">
-                  <Icon className="w-5 h-5 text-terracotta-600 shrink-0 mt-0.5" />
-                  <span>{item.q}</span>
-                </h3>
+                <h2 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-terracotta-100/70 border border-terracotta-600/20 flex items-center justify-center text-terracotta-700 shrink-0 mt-0.5">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="pt-0.5">{item.q}</span>
+                </h2>
 
                 {item.isStructuredFormats ? (
-                  <div className="pl-0 sm:pl-7 space-y-4 pt-1">
-                    <p className="text-xs text-charcoal-700 font-sans leading-relaxed">
-                      We support <strong>19 distinct file formats</strong> across documents, spreadsheets, structured data, and code markup. All formats are automatically parsed, chunked, and indexed with equal retrieval accuracy:
+                  <div className="pl-0 sm:pl-10 space-y-4 pt-1">
+                    <p className="text-xs sm:text-sm text-charcoal-700 font-sans leading-relaxed">
+                      We support <strong>19 distinct file formats</strong> across documents, spreadsheets, structured data, and code markup. All formats are parsed, chunked, and indexed with equal retrieval accuracy:
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {fileCategories.map((cat, cIdx) => {
                         const CatIcon = cat.icon;
                         return (
                           <div
                             key={cIdx}
-                            className="p-3.5 rounded-lg bg-parchment-100/70 border border-warmborder/80 space-y-2"
+                            className="p-4 rounded-xl bg-parchment-100/70 border border-warmborder/80 space-y-2"
                           >
-                            <div className="flex items-center gap-2 font-serif font-bold text-xs text-charcoal-900 border-b border-warmborder/60 pb-1.5">
+                            <div className="flex items-center gap-2 font-serif font-bold text-xs text-charcoal-900 border-b border-warmborder/60 pb-2">
                               <CatIcon className="w-4 h-4 text-terracotta-600 shrink-0" />
                               <span>{cat.title}</span>
                             </div>
@@ -161,7 +180,7 @@ export default function FAQ() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-charcoal-700 leading-relaxed font-sans pl-0 sm:pl-7 text-xs sm:text-sm">
+                  <p className="text-charcoal-700 leading-relaxed font-sans pl-0 sm:pl-10 text-xs sm:text-sm">
                     {item.a}
                   </p>
                 )}
@@ -169,7 +188,30 @@ export default function FAQ() {
             );
           })}
         </div>
-      </div>
+
+        {/* Bottom CTA Block */}
+        <div className="border-t border-warmborder pt-10 pb-4">
+          <div className="p-8 sm:p-10 rounded-3xl bg-parchment-200/60 border border-warmborder text-center space-y-4 shadow-xs">
+            <h2 className="font-serif font-bold text-2xl sm:text-3xl text-charcoal-900">
+              Try Ask My Documents
+            </h2>
+            <p className="font-sans text-xs sm:text-sm text-charcoal-700 max-w-md mx-auto">
+              Start querying your files instantly with zero account setup.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/workspace"
+                className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 font-serif font-bold text-sm sm:text-base shadow-sm hover:shadow transition-all text-center"
+              >
+                <span>Try Ask My Documents</span>
+                <ArrowRight className="w-4 h-4 shrink-0" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <LandingFooter />
     </div>
   );
 }

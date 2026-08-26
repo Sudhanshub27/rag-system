@@ -7,6 +7,7 @@ import ReadingPane from './components/ReadingPane';
 import SourceInspector from './components/SourceInspector';
 
 // Lazy loaded page components for optimal initial bundle performance
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const RetrievalSettings = lazy(() => import('./pages/RetrievalSettings'));
@@ -431,7 +432,7 @@ function MainWorkspace() {
 export default function App() {
   return (
     <Router>
-      <div className="flex flex-col h-screen w-screen overflow-hidden bg-parchment-100 font-sans antialiased">
+      <div className="flex flex-col h-screen w-full max-w-full overflow-x-hidden overflow-y-hidden bg-parchment-100 font-sans antialiased">
         <Navbar />
         <main className="flex-1 min-h-0 overflow-hidden relative flex">
           <Suspense fallback={
@@ -443,7 +444,8 @@ export default function App() {
             </div>
           }>
             <Routes>
-              <Route path="/" element={<MainWorkspace />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/workspace" element={<MainWorkspace />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/retrieval-settings" element={<RetrievalSettings />} />

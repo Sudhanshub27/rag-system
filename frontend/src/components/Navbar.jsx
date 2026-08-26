@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { BookOpen, Shield, Sliders, HelpCircle, LayoutDashboard, Menu, X } from 'lucide-react';
+import { BookOpen, Shield, HelpCircle, LayoutDashboard, Sliders, Menu, X, ArrowRight } from 'lucide-react';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
-  const navItems = [
-    { to: '/', label: 'Workspace', icon: LayoutDashboard },
+  // Determine navigation mode based on current route
+  const isWorkspaceMode =
+    location.pathname === '/workspace' || location.pathname === '/retrieval-settings';
+
+  const publicNavItems = [
     { to: '/how-it-works', label: 'How It Works', icon: BookOpen },
-    { to: '/privacy', label: 'Privacy & Your Data', icon: Shield },
-    { to: '/retrieval-settings', label: 'Retrieval Settings', icon: Sliders },
+    { to: '/privacy', label: 'Privacy', icon: Shield },
     { to: '/faq', label: 'FAQ', icon: HelpCircle },
   ];
+
+  const workspaceNavItems = [
+    { to: '/workspace', label: 'Workspace', icon: LayoutDashboard },
+    { to: '/retrieval-settings', label: 'Retrieval Settings', icon: Sliders },
+    { to: '/how-it-works', label: 'How It Works', icon: BookOpen },
+    { to: '/privacy', label: 'Privacy', icon: Shield },
+    { to: '/faq', label: 'FAQ', icon: HelpCircle },
+  ];
+
+  const currentNavItems = isWorkspaceMode ? workspaceNavItems : publicNavItems;
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -32,43 +44,57 @@ export default function Navbar() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="h-14 shrink-0 bg-[#DFD5C3] border-b border-[#C8BCA8] px-4 md:px-6 flex items-center justify-between font-sans select-none z-30 shadow-xs relative">
+    <header className="h-14 shrink-0 w-full max-w-full box-border bg-[#DFD5C3] border-b border-[#C8BCA8] px-4 md:px-6 flex items-center justify-between font-sans select-none z-30 shadow-xs relative">
       {/* Brand Identity */}
       <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
         <img
           src="/fav-icon.png"
           alt="Ask My Documents Logo"
-          className="w-7 h-7 sm:w-8 sm:h-8 object-contain group-hover:scale-105 transition-transform"
+          width="32"
+          height="32"
+          className="w-8 h-8 object-contain shrink-0 group-hover:scale-105 transition-transform"
         />
         <span className="font-serif font-bold text-charcoal-900 text-base sm:text-lg tracking-tight truncate">
           Ask My Documents
         </span>
       </Link>
 
-      {/* Desktop Navigation Links */}
-      <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-charcoal-800">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              aria-label={item.label}
-              className={({ isActive }) =>
-                `min-h-[44px] px-3.5 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
-                  isActive
-                    ? 'bg-parchment-50 text-terracotta-700 font-bold border border-warmborder/80 shadow-2xs'
-                    : 'text-charcoal-800 hover:bg-parchment-200/80 hover:text-charcoal-900'
-                }`
-              }
-            >
-              <Icon className="w-4 h-4 text-terracotta-700 shrink-0" />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
+      {/* Desktop Navigation Links & CTA */}
+      <div className="hidden md:flex items-center gap-3">
+        <nav aria-label="Main Navigation" className="flex items-center gap-1.5 text-xs font-semibold text-charcoal-800">
+          {currentNavItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/workspace'}
+                aria-label={item.label}
+                className={({ isActive }) =>
+                  `min-h-[44px] px-3.5 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                    isActive
+                      ? 'bg-parchment-50 text-terracotta-700 font-bold border border-warmborder/80 shadow-2xs'
+                      : 'text-charcoal-800 hover:bg-parchment-200/80 hover:text-charcoal-900'
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4 text-terracotta-700 shrink-0" />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {!isWorkspaceMode && (
+          <Link
+            to="/workspace"
+            className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-4 py-2 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 font-serif font-bold text-xs sm:text-sm tracking-wide shadow-xs hover:shadow transition-all active:scale-[0.98]"
+          >
+            <span>Try it</span>
+            <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+          </Link>
+        )}
+      </div>
 
       {/* Mobile Hamburger Toggle Button */}
       <button
@@ -96,7 +122,9 @@ export default function Navbar() {
               <div className="flex items-center justify-between pb-4 border-b border-warmborder">
                 <div className="flex items-center gap-2.5">
                   <img src="/fav-icon.png" alt="Logo" className="w-7 h-7 object-contain" />
-                  <span className="font-serif font-bold text-charcoal-900 text-base">Navigation</span>
+                  <span className="font-serif font-bold text-charcoal-900 text-base">
+                    {isWorkspaceMode ? 'Workspace Menu' : 'Navigation'}
+                  </span>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -109,13 +137,13 @@ export default function Navbar() {
 
               {/* Navigation Links */}
               <nav className="flex flex-col gap-2">
-                {navItems.map((item) => {
+                {currentNavItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <NavLink
                       key={item.to}
                       to={item.to}
-                      end={item.to === '/'}
+                      end={item.to === '/workspace'}
                       onClick={() => setMobileMenuOpen(false)}
                       className={({ isActive }) =>
                         `min-h-[44px] px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-semibold transition-all ${
@@ -131,6 +159,19 @@ export default function Navbar() {
                   );
                 })}
               </nav>
+
+              {!isWorkspaceMode && (
+                <div className="pt-2">
+                  <Link
+                    to="/workspace"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full min-h-[44px] px-4 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-serif font-bold bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 shadow-xs transition-all text-center"
+                  >
+                    <span>Try it</span>
+                    <ArrowRight className="w-4 h-4 shrink-0" />
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-warmborder text-[11px] text-charcoal-500 font-mono text-center">
