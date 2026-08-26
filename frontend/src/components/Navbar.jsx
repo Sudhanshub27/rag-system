@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { BookOpen, Shield, HelpCircle, LayoutDashboard, Sliders, Menu, X, ArrowRight } from 'lucide-react';
+import { BookOpen, Shield, HelpCircle, LayoutDashboard, Sliders, Menu, X, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -8,9 +8,10 @@ export default function Navbar() {
 
   // Determine navigation mode based on current route
   const isWorkspaceMode =
-    location.pathname === '/workspace' || location.pathname === '/retrieval-settings';
+    location.pathname === '/workspace';
 
   const publicNavItems = [
+    { to: '/retrieval-settings', label: 'Features', icon: Sliders },
     { to: '/how-it-works', label: 'How It Works', icon: BookOpen },
     { to: '/privacy', label: 'Privacy', icon: Shield },
     { to: '/faq', label: 'FAQ', icon: HelpCircle },
@@ -68,116 +69,77 @@ export default function Navbar() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/workspace'}
-                aria-label={item.label}
                 className={({ isActive }) =>
-                  `min-h-[44px] px-3.5 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                  `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-parchment-50 text-terracotta-700 font-bold border border-warmborder/80 shadow-2xs'
-                      : 'text-charcoal-800 hover:bg-parchment-200/80 hover:text-charcoal-900'
+                      ? 'bg-parchment-50 text-terracotta-700 shadow-2xs font-bold border border-warmborder'
+                      : 'hover:bg-parchment-200/60 hover:text-charcoal-900'
                   }`
                 }
               >
-                <Icon className="w-4 h-4 text-terracotta-700 shrink-0" />
+                <Icon className="w-3.5 h-3.5 shrink-0 opacity-80" />
                 <span>{item.label}</span>
               </NavLink>
             );
           })}
         </nav>
 
-        {!isWorkspaceMode && (
+        {/* Primary Header Action */}
+        <div className="pl-2 border-l border-warmborder">
           <Link
             to="/workspace"
-            className="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-4 py-2 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 font-serif font-bold text-xs sm:text-sm tracking-wide shadow-xs hover:shadow transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 font-serif font-bold text-xs shadow-2xs hover:shadow-xs transition-all active:scale-[0.98]"
           >
             <span>Try it</span>
             <ArrowRight className="w-3.5 h-3.5 shrink-0" />
           </Link>
-        )}
+        </div>
       </div>
 
-      {/* Mobile Hamburger Toggle Button */}
+      {/* Mobile Menu Trigger Button */}
       <button
         type="button"
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="md:hidden flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-800 hover:text-charcoal-900 hover:bg-parchment-200/60 rounded-xl transition-colors cursor-pointer"
+        className="md:hidden p-2 rounded-lg text-charcoal-800 hover:bg-parchment-200/70 active:bg-parchment-300 transition-colors focus:outline-none"
         aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
       >
-        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
-      {/* Mobile Navigation Slide-over Drawer */}
+      {/* Mobile Navigation Drawer Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
-          {/* Backdrop */}
-          <div
-            onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 bg-charcoal-900/50 backdrop-blur-xs transition-opacity animate-fadeIn"
-          />
-
-          {/* Sliding Panel */}
-          <aside className="fixed top-0 right-0 bottom-0 w-[80vw] max-w-xs bg-parchment-100 border-l border-warmborder shadow-2xl z-50 flex flex-col justify-between p-5 animate-slideInRight font-sans select-none overflow-y-auto">
-            <div className="space-y-6">
-              {/* Drawer Top Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-warmborder">
-                <div className="flex items-center gap-2.5">
-                  <img src="/fav-icon.png" alt="Logo" className="w-7 h-7 object-contain" />
-                  <span className="font-serif font-bold text-charcoal-900 text-base">
-                    {isWorkspaceMode ? 'Workspace Menu' : 'Navigation'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-charcoal-500 hover:text-charcoal-900 hover:bg-parchment-200 rounded-xl transition-colors"
-                  aria-label="Close Drawer"
+        <div className="fixed inset-0 top-14 z-40 md:hidden flex flex-col bg-parchment-100/98 backdrop-blur-md animate-fadeIn">
+          <nav className="flex flex-col p-4 space-y-2 border-b border-warmborder">
+            {currentNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                      isActive
+                        ? 'bg-parchment-50 text-terracotta-700 border border-warmborder shadow-2xs font-bold'
+                        : 'text-charcoal-800 hover:bg-parchment-200/60'
+                    }`
+                  }
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                  <Icon className="w-4 h-4 text-terracotta-600" />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
 
-              {/* Navigation Links */}
-              <nav className="flex flex-col gap-2">
-                {currentNavItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.to === '/workspace'}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `min-h-[44px] px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-semibold transition-all ${
-                          isActive
-                            ? 'bg-parchment-50 text-terracotta-600 border border-warmborder shadow-2xs'
-                            : 'text-charcoal-800 hover:bg-parchment-200/80 hover:text-charcoal-900'
-                        }`
-                      }
-                    >
-                      <Icon className="w-4 h-4 text-terracotta-600 shrink-0" />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  );
-                })}
-              </nav>
-
-              {!isWorkspaceMode && (
-                <div className="pt-2">
-                  <Link
-                    to="/workspace"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full min-h-[44px] px-4 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-serif font-bold bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 shadow-xs transition-all text-center"
-                  >
-                    <span>Try it</span>
-                    <ArrowRight className="w-4 h-4 shrink-0" />
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-4 border-t border-warmborder text-[11px] text-charcoal-500 font-mono text-center">
-              Ask My Documents • Grounded QA
-            </div>
-          </aside>
+          <div className="p-4 mt-auto space-y-3 bg-parchment-200/40">
+            <Link
+              to="/workspace"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 active:bg-terracotta-800 text-parchment-50 font-serif font-bold text-sm shadow-sm transition-all text-center"
+            >
+              <span>Try Ask My Documents</span>
+              <ArrowRight className="w-4 h-4 shrink-0" />
+            </Link>
+          </div>
         </div>
       )}
     </header>
