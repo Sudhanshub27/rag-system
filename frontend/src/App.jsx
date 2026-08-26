@@ -12,6 +12,8 @@ const HowItWorks = lazy(() => import('./pages/HowItWorks'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const RetrievalSettings = lazy(() => import('./pages/RetrievalSettings'));
 const FAQ = lazy(() => import('./pages/FAQ'));
+const Terms = lazy(() => import('./pages/Terms'));
+const License = lazy(() => import('./pages/License'));
 
 const getApiBase = () => {
   let base = import.meta.env.VITE_API_BASE_URL;
@@ -450,6 +452,8 @@ export default function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/retrieval-settings" element={<RetrievalSettings />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/license" element={<License />} />
             </Routes>
           </Suspense>
         </main>

@@ -1,4 +1,4 @@
-# 📚 Ask My Documents — Privacy-First RAG System
+# Ask My Documents — Privacy-First RAG System
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![React 18+](https://img.shields.io/badge/react-18+-61dafb.svg)](https://react.dev/)
@@ -7,48 +7,48 @@
 [![Privacy Policy](https://img.shields.io/badge/Privacy_Policy-Enforced-green.svg)](PRIVACY_POLICY.md)
 [![Tests](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml/badge.svg?job=test)](https://github.com/Sudhanshub27/rag-system/actions/workflows/ci.yml)
 
-A **privacy-hardened, production-grade Retrieval-Augmented Generation (RAG)** web application built with a **FastAPI backend** and **React + Vite frontend**. Designed for private document intelligence, it features **strict multi-tenant data isolation**, **zero data-training compliance**, **local client-side PII anonymization**, **Groq free inference**, **HyDE**, **Multi-Query Expansion**, and **Self-RAG evaluation scoring**.
+A privacy-hardened, production-grade Retrieval-Augmented Generation (RAG) web application built with a FastAPI backend and React + Vite frontend. Designed for private document intelligence, it features strict multi-tenant data isolation, zero data-training compliance, local client-side PII anonymization, free Groq API inference, HyDE, Multi-Query Expansion, and Self-RAG evaluation scoring.
 
 ---
 
-## 📋 Table of Contents
-- [✨ Key Features](#-key-features)
-- [🔒 Privacy & Zero-Training Guarantee](#-privacy--zero-training-guarantee)
-- [🏢 Multi-Tenant Isolation Architecture](#-multi-tenant-isolation-architecture)
-- [⚖️ Why RAG vs. Pasting Docs into LLMs](#-why-rag-vs-pasting-documents-into-chatgptclaude)
-- [🧩 Retrieval Architecture & ML Pipeline](#-retrieval-architecture--ml-pipeline)
-- [🧭 Query Routing (Narrow vs Broad)](#-query-routing-narrow-vs-broad)
-- [🌐 SEO Metadata & Search Engine Crawling](#-seo-metadata--search-engine-crawling)
-- [🔐 Data Handling & Security](#-data-handling--security)
-- [📂 Project Structure](#-project-structure)
-- [⚡ Quick Start & Running Locally](#-quick-start--running-locally)
-- [🐳 Docker & Cloud Deployment](#-docker--cloud-deployment)
-- [🔐 Supported LLM Inference Engines](#-supported-llm-inference-engines)
-- [🧪 Testing & CI Compliance](#-testing--ci-compliance)
-- [📜 Privacy Policy & Terms of Use](#-privacy-policy--terms-of-use)
-- [📝 License & Code Usage Terms](#-license--code-usage-terms)
+## Table of Contents
+- [Key Features](#key-features)
+- [Privacy & Zero-Training Guarantee](#privacy--zero-training-guarantee)
+- [Multi-Tenant Isolation Architecture](#multi-tenant-isolation-architecture)
+- [Why RAG vs. Pasting Docs into LLMs](#why-rag-vs-pasting-documents-into-chatgptclaude)
+- [Retrieval Architecture & ML Pipeline](#retrieval-architecture--ml-pipeline)
+- [Query Routing (Narrow vs Broad)](#query-routing-narrow-vs-broad)
+- [SEO Metadata & Search Engine Crawling](#seo-metadata--search-engine-crawling)
+- [Data Handling & Security](#data-handling--security)
+- [Project Structure](#project-structure)
+- [Quick Start & Running Locally](#quick-start--running-locally)
+- [Docker & Cloud Deployment](#docker--cloud-deployment)
+- [Supported LLM Inference Engines](#supported-llm-inference-engines)
+- [Testing & CI Compliance](#testing--ci-compliance)
+- [Privacy Policy & Terms of Use](#privacy-policy--terms-of-use)
+- [License & Code Usage Terms](#license--code-usage-terms)
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 | Category | Capability & Technology Stack | Technical Details |
 |---|---|---|
-| 🖥️ **1. Modern Web Application** | React 18 + Vite & FastAPI SSE Streaming | Parchment Editorial UI (`frontend/`) with real-time SSE progress streaming (`api/routes/upload.py`) & SSE token response generation (`api/routes/query.py`). |
-| 🏢 **2. Multi-Tenant Isolation** | Physical Collection & Cache Isolation | Anonymous `HttpOnly` cookie-based `tenant_id` scopes ChromaDB collections (`tenant_<id>`), BM25 keyword indices, and summary caches. |
-| 📂 **3. Ingestion & Document Processing** | Layout-Aware & Hyperlink Extraction | Page-by-page text & link parsing via `PyMuPDF` (`fitz`), fallback to `pypdf`, handling PDF, TXT, and Markdown files. |
-| ✂️ **4. Chunking Strategy** | Semantic Pitch-Deck Chunker | Sentence-boundary aware regex splitting (`250` token target, `15` token min limit to preserve bullet points and lists). |
-| 🗄️ **5. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `SentenceTransformers all-MiniLM-L6-v2` (384-dim ONNX optimized embeddings) stored in tenant-scoped vector containers. |
-| 🔍 **6. Hybrid Retrieval Engine** | BM25 + Vector Search + Cross-Encoder | Reciprocal Rank Fusion (RRF) combining `rank_bm25` and ChromaDB vector search, reranked via `ms-marco-MiniLM-L-6-v2`. |
-| 🧭 **7. Dual Query Router** | Intent-Driven Processing | Distinguishes specific fact lookups (Narrow) from whole-document overview requests (Broad) using Map-Reduce summarization. |
-| 🛡️ **8. Privacy & PII Scrubbing** | Client-Side Regex Anonymization | Local scrubber sanitizes personal names, email addresses, phone numbers, and IP addresses prior to API payload transmission. |
-| 🤖 **9. LLM Inference Engine** | Groq, OpenAI, Anthropic, DeepSeek, Gemini, OpenRouter | Default: **Groq (Llama 3.3 70B)** for free, zero-training inference; supports Multi-Key Rotation and BYOK (Bring Your Own Key) for free & paid tiers. |
+| **1. Modern Web Application** | React 18 + Vite & FastAPI SSE Streaming | Parchment Editorial UI (`frontend/`) with real-time SSE progress streaming (`api/routes/upload.py`) & SSE token response generation (`api/routes/query.py`). |
+| **2. Multi-Tenant Isolation** | Physical Collection & Cache Isolation | Anonymous `HttpOnly` cookie-based `tenant_id` scopes ChromaDB collections (`tenant_<id>`), BM25 keyword indices, and summary caches. |
+| **3. Ingestion & Document Processing** | Layout-Aware & Hyperlink Extraction | Page-by-page text & link parsing via `PyMuPDF` (`fitz`), handling PDF, Word, Excel, CSV, JSON, Markdown, HTML, and text files. |
+| **4. Chunking Strategy** | Semantic Pitch-Deck Chunker | Sentence-boundary aware regex splitting (`250` token target, `15` token min limit to preserve bullet points and lists). |
+| **5. Embeddings & Storage** | Dense Vectors & Multi-Tenant ChromaDB | `SentenceTransformers all-MiniLM-L6-v2` (384-dim ONNX optimized embeddings) stored in tenant-scoped vector containers. |
+| **6. Hybrid Retrieval Engine** | BM25 + Vector Search + Cross-Encoder | Reciprocal Rank Fusion (RRF) combining `rank_bm25` and ChromaDB vector search, reranked via `ms-marco-MiniLM-L-6-v2`. |
+| **7. Dual Query Router** | Intent-Driven Processing | Distinguishes specific fact lookups (Narrow) from whole-document overview requests (Broad) using Map-Reduce summarization. |
+| **8. Privacy & PII Scrubbing** | Client-Side Regex Anonymization | Local scrubber sanitizes personal names, email addresses, phone numbers, and IP addresses prior to API payload transmission. |
+| **9. LLM Inference Engine** | Groq, OpenAI, Anthropic, DeepSeek, Gemini, OpenRouter | Default: **Groq (Llama 3.3 70B)** for free, zero-training inference; supports Multi-Key Rotation and BYOK (Bring Your Own Key) for free & paid tiers. |
 
 ---
 
-## 🔒 Privacy & Zero-Training Guarantee
+## Privacy & Zero-Training Guarantee
 
-This application enforces a strict privacy-first architecture to ensure **your documents remain private and are NEVER used to train AI models**:
+This application enforces a strict privacy-first architecture to ensure your documents remain private and are NEVER used to train AI models:
 
 1. **Strict Provider Filtering**: Uses Groq API as the default cloud provider whose official terms guarantee zero data retention and zero training on API payloads.
 2. **Built-in Local PII Anonymization**: Client-side regex scrubber (`utils/anonymizer.py`) automatically sanitizes personal names, email addresses, phone numbers, and IP addresses *before* payload transmission to any external provider.
@@ -59,7 +59,7 @@ This application enforces a strict privacy-first architecture to ensure **your d
 
 ---
 
-## 🏢 Multi-Tenant Isolation Architecture
+## Multi-Tenant Isolation Architecture
 
 The system achieves structural data isolation across multiple concurrent tenants without requiring account creation:
 
@@ -86,7 +86,7 @@ The system achieves structural data isolation across multiple concurrent tenants
 
 ---
 
-## ⚖️ Why RAG vs. Pasting Documents into ChatGPT/Claude
+## Why RAG vs. Pasting Documents into ChatGPT/Claude
 
 | Dimension | Pasting Docs into Consumer LLMs | Production Privacy-Hardened RAG |
 |---|---|---|
@@ -98,15 +98,15 @@ The system achieves structural data isolation across multiple concurrent tenants
 
 ---
 
-## 🧩 Retrieval Architecture & ML Pipeline
+## Retrieval Architecture & ML Pipeline
 
 ```
-  Document Upload ──► PyMuPDF Ingestion ──► Semantic Chunker (250 tokens)
-                                                    │
-                                                    ▼
+  Document Upload ──► Layout Ingestion ──► Semantic Chunker (250 tokens)
+                                                  │
+                                                  ▼
   User Query ◄── Cross-Encoder Reranker ◄── RRF Fusion ◄── Dense Vector (MiniLM)
-       │                                                      +
-       ▼                                                 Sparse BM25 Keyword
+       │                                                    +
+       ▼                                               Sparse BM25 Keyword
   Answer Generator ──► SSE Token Stream ──► React Reading Pane + Inspector
 ```
 
@@ -124,7 +124,7 @@ The system achieves structural data isolation across multiple concurrent tenants
 
 ---
 
-## 🧭 Query Routing (Narrow vs Broad)
+## Query Routing (Narrow vs Broad)
 
 Specific lookup questions ("what is the refund policy?") and whole-document questions ("explain this document") use different execution pipelines.
 
@@ -142,7 +142,7 @@ Specific lookup questions ("what is the refund policy?") and whole-document ques
 
 ---
 
-## 🌐 SEO Metadata & Search Engine Crawling
+## SEO Metadata & Search Engine Crawling
 
 The application includes full web metadata and search engine crawling configuration for optimal discovery and accessibility:
 
@@ -152,7 +152,7 @@ The application includes full web metadata and search engine crawling configurat
 
 ---
 
-## 🔐 Data Handling & Security
+## Data Handling & Security
 
 This project processes documents via third-party inference APIs (Groq default; OpenAI, Anthropic, Gemini optional) hosted on containerized infrastructure (Docker / Cloud VM).
 
@@ -164,7 +164,7 @@ This project processes documents via third-party inference APIs (Groq default; O
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 rag-system/
@@ -223,7 +223,7 @@ rag-system/
 
 ---
 
-## ⚡ Quick Start & Running Locally
+## Quick Start & Running Locally
 
 > [!NOTE]
 > **Evaluation License Notice**: The setup instructions below are provided strictly for **personal evaluation, code inspection, and local testing** on your machine under the [LICENSE](LICENSE). Public deployment, commercial hosting, or redistribution remains strictly prohibited without written consent.
@@ -292,7 +292,7 @@ python cli.py --tenant-id tenant_org_a query "What are the Q3 financial results?
 
 ---
 
-## 🐳 Docker & Cloud Deployment
+## Docker & Cloud Deployment
 
 ### 1. Docker Compose (Local or Server)
 
@@ -312,11 +312,11 @@ Services will be available at:
 
 ---
 
-### 2. Oracle Cloud Always Free Tier Deployment
+### 2. Cloud VM Deployment
 
-The application is light-weight and optimized to run inside Oracle Cloud's Always Free VM instances (`Ampere A1` 4 ARM vCPUs / 24GB RAM or `E2.1.Micro` 1GB RAM instance):
+The application is lightweight and optimized to run inside cloud instances (e.g. AWS EC2, Oracle Cloud Always Free VM, DigitalOcean):
 
-1. **Provision VM**: Launch an Ubuntu VM on Oracle Cloud Infrastructure.
+1. **Provision VM**: Launch an Ubuntu VM instance.
 2. **Install Docker & Docker Compose**:
    ```bash
    sudo apt update && sudo apt install -y docker.io docker-compose
@@ -326,7 +326,6 @@ The application is light-weight and optimized to run inside Oracle Cloud's Alway
    git clone https://github.com/Sudhanshub27/rag-system.git
    cd rag-system
    cp .env.example .env
-   # Edit .env to set your GROQ_API_KEY
    ```
 4. **Deploy Containers**:
    ```bash
@@ -335,7 +334,7 @@ The application is light-weight and optimized to run inside Oracle Cloud's Alway
 
 ---
 
-## 🔐 Supported LLM Inference Engines
+## Supported LLM Inference Engines
 
 The application features a flexible LLM provider architecture with zero-training compliance:
 
@@ -348,7 +347,7 @@ The application features a flexible LLM provider architecture with zero-training
 
 ---
 
-## 🧪 Testing & CI Compliance
+## Testing & CI Compliance
 
 Run the automated suite (unit tests, coverage, and linting):
 
@@ -362,7 +361,7 @@ Run the automated suite (unit tests, coverage, and linting):
 
 ---
 
-## 📜 Privacy Policy & Terms of Use
+## Privacy Policy & Terms of Use
 
 Please read [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details on:
 - **Zero-Training AI Commitments**: Guaranteed data protection on API inputs/outputs.
@@ -372,7 +371,7 @@ Please read [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details on:
 
 ---
 
-## 📝 License & Code Usage Terms
+## License & Code Usage Terms
 
 Copyright (c) 2026 Sudhanshu Batra. All Rights Reserved.
 
