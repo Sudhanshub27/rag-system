@@ -1,5 +1,5 @@
 # Core RAG dependencies (PyTorch SOTA Embedding Engine & Cross-Encoder Reranker)
-torch>=2.0.0
+
 sentence-transformers>=3.0.0
 chromadb>=0.5.0
 onnxruntime>=1.18.0
